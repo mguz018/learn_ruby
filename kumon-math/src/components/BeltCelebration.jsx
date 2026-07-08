@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
-import { getLevel } from '../data/levels.js'
+import { getSubjectLevel } from '../data/subjects.js'
 import { playFanfare } from '../lib/sound.js'
 
 // Full-screen belt promotion celebration with confetti + fanfare.
-export default function BeltCelebration({ belt, profile, toLevel, onContinue }) {
-  const nextLevel = getLevel(toLevel)
+export default function BeltCelebration({ belt, subject, profile, toLevel, onContinue }) {
+  const nextLevel = getSubjectLevel(subject.id, toLevel)
 
   useEffect(() => {
     playFanfare()
@@ -13,7 +13,10 @@ export default function BeltCelebration({ belt, profile, toLevel, onContinue }) 
   const confetti = Array.from({ length: 40 })
 
   return (
-    <div className="screen celebration" style={{ '--belt': belt.color, '--belt-ink': belt.ink, '--glow': belt.glow }}>
+    <div
+      className="screen celebration"
+      style={{ '--belt': belt.color, '--belt-ink': belt.ink, '--glow': belt.glow }}
+    >
       <div className="confetti-layer" aria-hidden>
         {confetti.map((_, i) => (
           <span
@@ -29,6 +32,9 @@ export default function BeltCelebration({ belt, profile, toLevel, onContinue }) 
       </div>
 
       <div className="celebration-inner">
+        <div className="celebrate-subject">
+          {subject.icon} {subject.name}
+        </div>
         <div className="celebrate-belt">
           <div className="belt-big" />
           <div className="belt-knot" />
@@ -36,9 +42,11 @@ export default function BeltCelebration({ belt, profile, toLevel, onContinue }) 
         <h1 className="celebrate-title">New Belt!</h1>
         <div className="celebrate-belt-name">{belt.name}</div>
         <p className="celebrate-msg">
-          Amazing, {profile.name}! You mastered it and earned your {belt.name}.
+          Amazing, {profile.name}! You earned your {belt.name} in {subject.name}.
         </p>
-        <p className="celebrate-next">Next up: Level {toLevel} — {nextLevel.title}</p>
+        <p className="celebrate-next">
+          Next up: Level {toLevel} — {nextLevel.title}
+        </p>
         <button className="primary-btn big glow-btn" onClick={onContinue}>
           Awesome! →
         </button>

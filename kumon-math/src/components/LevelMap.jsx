@@ -1,26 +1,26 @@
 import { useApp } from '../context/AppContext.jsx'
-import { LEVELS } from '../data/levels.js'
+import { getSubject } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
 import { fmtTime } from '../lib/stats.js'
-import { effectiveStreak, practicedToday } from '../lib/streaks.js'
-import StreakBadge from './StreakBadge.jsx'
 
-export default function LevelMap({ profile, onStart, onHome }) {
+export default function LevelMap({ profile, subjectId, onStart, onBack }) {
   const { state } = useApp()
-  const p = state.profiles[profile.id] // freshest copy
-  const currentBelt = beltForLevel(p.currentLevel - 1)
+  const p = state.profiles[profile.id]
+  const subject = getSubject(subjectId)
+  const sp = p.subjects[subjectId]
+  const currentBelt = beltForLevel(sp.currentLevel - 1)
 
   return (
-    <div className="screen levelmap" style={{ '--accent': p.color }}>
+    <div className="screen levelmap" style={{ '--accent': subject.color }}>
       <header className="map-head">
-        <button className="ghost-btn" onClick={onHome}>
-          ‹ Home
+        <button className="ghost-btn" onClick={onBack}>
+          ‹ Back
         </button>
         <div className="map-title">
-          <span className="map-avatar">{p.avatar}</span>
+          <span className="map-avatar">{subject.icon}</span>
           <div>
-            <div className="map-name">{p.name}</div>
-            <StreakBadge count={effectiveStreak(p)} practicedToday={practicedToday(p)} />
+            <div className="map-name">{subject.name}</div>
+            <div className="map-sub">{p.name}</div>
           </div>
         </div>
         <div className="map-belt" style={{ '--belt': currentBelt.color, '--belt-ink': currentBelt.ink }}>
@@ -31,11 +31,11 @@ export default function LevelMap({ profile, onStart, onHome }) {
 
       <div className="path-scroll">
         <ol className="belt-path">
-          {LEVELS.map((lvl, idx) => {
+          {subject.levels.map((lvl, idx) => {
             const belt = beltForLevel(idx)
             const status =
-              lvl.id < p.currentLevel ? 'done' : lvl.id === p.currentLevel ? 'current' : 'ahead'
-            const best = p.bests[lvl.id]
+              lvl.id < sp.currentLevel ? 'done' : lvl.id === sp.currentLevel ? 'current' : 'ahead'
+            const best = sp.bests[lvl.id]
             return (
               <li key={lvl.id} className={`path-node ${status} ${idx % 2 ? 'right' : 'left'}`}>
                 <div
@@ -58,7 +58,7 @@ export default function LevelMap({ profile, onStart, onHome }) {
 
       <div className="map-foot">
         <button className="primary-btn big" onClick={onStart}>
-          ▶ Start Level {p.currentLevel} Practice
+          ▶ Start Level {sp.currentLevel} · {getSubject(subjectId).levels[sp.currentLevel - 1]?.title}
         </button>
       </div>
     </div>

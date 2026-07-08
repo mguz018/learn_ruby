@@ -1,9 +1,14 @@
-// Big, touch-friendly numeric keypad — the fallback input mode.
+// Big, touch-friendly numeric keypad — the fallback input mode (and the required
+// mode for decimal answers, where a per-digit handwriting box doesn't fit).
 
-export default function Keypad({ value, onChange, maxLen = 4 }) {
+export default function Keypad({ value, onChange, maxLen = 4, allowDecimal = false }) {
   const press = (digit) => {
     if (value.length >= maxLen) return
     onChange(value + digit)
+  }
+  const dot = () => {
+    if (value.includes('.') || value === '' || value.length >= maxLen) return
+    onChange(value + '.')
   }
   const back = () => onChange(value.slice(0, -1))
   const clear = () => onChange('')
@@ -21,16 +26,33 @@ export default function Keypad({ value, onChange, maxLen = 4 }) {
             {k}
           </button>
         ))}
-        <button className="key key-fn" onClick={clear} aria-label="Clear">
-          C
-        </button>
+        {allowDecimal ? (
+          <button className="key" onClick={dot} aria-label="Decimal point">
+            .
+          </button>
+        ) : (
+          <button className="key key-fn" onClick={clear} aria-label="Clear">
+            C
+          </button>
+        )}
         <button className="key" onClick={() => press('0')}>
           0
         </button>
-        <button className="key key-fn" onClick={back} aria-label="Backspace">
-          ⌫
-        </button>
+        {allowDecimal ? (
+          <button className="key key-fn" onClick={back} aria-label="Backspace">
+            ⌫
+          </button>
+        ) : (
+          <button className="key key-fn" onClick={back} aria-label="Backspace">
+            ⌫
+          </button>
+        )}
       </div>
+      {allowDecimal && (
+        <button className="key-clear-row" onClick={clear}>
+          Clear
+        </button>
+      )}
     </div>
   )
 }

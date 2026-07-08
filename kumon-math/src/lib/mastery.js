@@ -1,37 +1,41 @@
-// Mastery gating: a kid advances only when they hit BOTH the speed target AND
-// the accuracy target for the level. Otherwise they repeat the level with a
-// fresh set.
+// Mastery gating.
+//   'speed-accuracy' (Math): must beat BOTH the time and accuracy target.
+//   'accuracy' (Reading/History/Science): belt earned on accuracy alone; time is
+//     tracked for the summary but never gates progress.
+// Fail either required target -> repeat the level with a fresh set.
 
-import { MAX_LEVEL } from '../data/levels.js'
-
-export function evaluateSet({ levelId, correct, total, timeMs, thresholds }) {
+export function evaluateSet({ correct, total, timeMs, thresholds, masteryType }) {
   const accuracy = total > 0 ? correct / total : 0
-  // Speed budget scales with the configured set size, so changing
-  // problems-per-set keeps the same per-problem pace.
-  const budgetMs = thresholds.speedSec * 1000 * (total / thresholds.problems)
-
-  const speedPass = timeMs <= budgetMs
   const accuracyPass = accuracy >= thresholds.accuracy
-  const mastered = speedPass && accuracyPass
+
+  const usesSpeed = masteryType === 'speed-accuracy' && thresholds.speedSec != null
+  let speedPass = true
+  let budgetMs = null
+  if (usesSpeed) {
+    budgetMs = thresholds.speedSec * 1000 * (total / thresholds.problems)
+    speedPass = timeMs <= budgetMs
+  }
+
+  const mastered = accuracyPass && speedPass
 
   return {
     accuracy,
     speedPass,
     accuracyPass,
+    usesSpeed,
     mastered,
     budgetMs,
-    speedTargetSec: Math.round(budgetMs / 1000),
+    speedTargetSec: budgetMs != null ? Math.round(budgetMs / 1000) : null,
     accuracyTarget: thresholds.accuracy,
   }
 }
 
-// Given the profile's current level and a mastery result on that level, return
-// the level to play next and whether they leveled up. Only mastering the level
-// you are CURRENTLY on advances you.
-export function nextLevelAfter(profile, playedLevelId, mastered) {
-  const onCurrent = playedLevelId === profile.currentLevel
-  if (mastered && onCurrent && profile.currentLevel < MAX_LEVEL) {
-    return { nextLevel: profile.currentLevel + 1, leveledUp: true }
+// Advance only if you mastered the level you're CURRENTLY on and there's a
+// higher level to reach.
+export function nextLevelAfter(currentLevel, playedLevelId, mastered, maxLevel) {
+  const onCurrent = playedLevelId === currentLevel
+  if (mastered && onCurrent && currentLevel < maxLevel) {
+    return { nextLevel: currentLevel + 1, leveledUp: true }
   }
-  return { nextLevel: profile.currentLevel, leveledUp: false }
+  return { nextLevel: currentLevel, leveledUp: false }
 }

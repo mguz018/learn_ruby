@@ -1,6 +1,6 @@
 import { useApp } from '../context/AppContext.jsx'
+import { SUBJECTS } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
-import { getLevel } from '../data/levels.js'
 import { effectiveStreak, practicedToday, familyAlive } from '../lib/streaks.js'
 import StreakBadge from './StreakBadge.jsx'
 
@@ -20,38 +20,41 @@ export default function HomeScreen({ onPickProfile, onParent }) {
       </header>
 
       <div className="profile-grid">
-        {profiles.map((p) => {
-          const belt = beltForLevel(p.currentLevel - 1)
-          const level = getLevel(p.currentLevel)
-          const streak = effectiveStreak(p)
-          return (
-            <button
-              key={p.id}
-              className="profile-card"
-              style={{ '--accent': p.color }}
-              onClick={() => onPickProfile(p.id)}
-            >
-              <div className="profile-avatar" aria-hidden>
-                {p.avatar}
-              </div>
-              <div className="profile-name">{p.name}</div>
-              <div className="profile-belt" style={{ '--belt': belt.color, '--belt-ink': belt.ink }}>
-                <span className="belt-chip" />
-                {belt.name}
-              </div>
-              <div className="profile-level">Level {p.currentLevel} · {level.title}</div>
-              <div className="profile-streak-row">
-                <StreakBadge count={streak} practicedToday={practicedToday(p)} />
-              </div>
-            </button>
-          )
-        })}
+        {profiles.map((p) => (
+          <button
+            key={p.id}
+            className="profile-card"
+            style={{ '--accent': p.color }}
+            onClick={() => onPickProfile(p.id)}
+          >
+            <div className="profile-avatar" aria-hidden>
+              {p.avatar}
+            </div>
+            <div className="profile-name">{p.name}</div>
+            <div className="profile-streak-row">
+              <StreakBadge count={effectiveStreak(p)} practicedToday={practicedToday(p)} />
+            </div>
+            <div className="subject-chips">
+              {SUBJECTS.map((s) => {
+                const belt = beltForLevel(p.subjects[s.id].currentLevel - 1)
+                return (
+                  <span key={s.id} className="subject-chip" title={`${s.name}: ${belt.name}`}>
+                    <span className="sc-icon">{s.icon}</span>
+                    <span className="sc-belt" style={{ background: belt.color }} />
+                  </span>
+                )
+              })}
+            </div>
+          </button>
+        ))}
       </div>
 
       <div className={`family-streak ${familyAlive(family) ? 'alive' : 'dormant'}`}>
         <div className="family-streak-icon">🤝</div>
         <div className="family-streak-text">
-          <strong>Family Streak: {family.streak} {family.streak === 1 ? 'day' : 'days'}</strong>
+          <strong>
+            Family Streak: {family.streak} {family.streak === 1 ? 'day' : 'days'}
+          </strong>
           <span>
             {bothToday
               ? 'Both practiced today — teamwork! 🎉'

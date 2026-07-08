@@ -1,14 +1,20 @@
 import { useRef, useState } from 'react'
 import { useApp } from '../context/AppContext.jsx'
-import { LEVELS, getLevel } from '../data/levels.js'
+import { SUBJECTS, getSubject, subjectMaxLevel, getSubjectLevel } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
-import { weeklySummary, topStruggles, recognitionCorrectionRate, fmtTime } from '../lib/stats.js'
+import {
+  weeklySummary,
+  topStruggles,
+  totalSetsThisWeek,
+  recognitionCorrectionRate,
+  fmtTime,
+} from '../lib/stats.js'
+import { effectiveStreak } from '../lib/streaks.js'
 import PinGate from './PinGate.jsx'
 
 export default function ParentDashboard({ onExit }) {
   const { state } = useApp()
   const [unlocked, setUnlocked] = useState(false)
-
   if (!unlocked) {
     return <PinGate expected={state.settings.pin} onUnlock={() => setUnlocked(true)} onCancel={onExit} />
   }
@@ -31,11 +37,7 @@ function Dashboard({ onExit }) {
       </header>
 
       <nav className="parent-tabs">
-        {[
-          ['overview', 'Overview'],
-          ['settings', 'Settings'],
-          ['data', 'Backup'],
-        ].map(([k, label]) => (
+        {[['overview', 'Overview'], ['settings', 'Settings'], ['data', 'Backup']].map(([k, label]) => (
           <button key={k} className={`tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>
             {label}
           </button>
@@ -49,24 +51,24 @@ function Dashboard({ onExit }) {
           ))}
         </div>
       )}
-
-      {tab === 'settings' && (
-        <SettingsPanel state={state} updateSettings={updateSettings} setPin={setPin} />
-      )}
-
-      {tab === 'data' && (
-        <DataPanel exportState={exportState} importState={importState} resetAll={resetAll} />
-      )}
+      {tab === 'settings' && <SettingsPanel state={state} updateSettings={updateSettings} setPin={setPin} />}
+      {tab === 'data' && <DataPanel exportState={exportState} importState={importState} resetAll={resetAll} />}
     </div>
   )
 }
 
 function KidOverview({ profile, moveLevel }) {
-  const summary = weeklySummary(profile)
-  const struggles = topStruggles(profile)
-  const belt = beltForLevel(profile.currentLevel - 1)
-  const level = getLevel(profile.currentLevel)
   const corr = recognitionCorrectionRate(profile)
+  const weekSets = totalSetsThisWeek(profile)
+
+  // Aggregate struggles across subjects, tagged with the subject icon.
+  const struggles = []
+  for (const s of SUBJECTS) {
+    for (const row of topStruggles(profile.subjects[s.id], 3)) {
+      struggles.push({ ...row, icon: s.icon, subject: s.name })
+    }
+  }
+  struggles.sort((a, b) => b.rate - a.rate || b.misses - a.misses)
 
   return (
     <section className="kid-card" style={{ '--accent': profile.color }}>
@@ -75,21 +77,45 @@ function KidOverview({ profile, moveLevel }) {
         <div>
           <h2>{profile.name}</h2>
           <div className="kid-sub">
-            <span className="belt-chip" style={{ '--belt': belt.color, '--belt-ink': belt.ink }} />
-            {belt.name} · Level {profile.currentLevel} · {level.title}
+            🔥 {effectiveStreak(profile)}-day streak · {weekSets} sets this week
           </div>
         </div>
       </div>
 
-      <div className="kid-stats">
-        <Metric label="Sets this week" value={summary.sets} />
-        <Metric label="Avg accuracy" value={`${Math.round(summary.avgAccuracy * 100)}%`} />
-        <Metric label="Avg time" value={fmtTime(summary.avgTimeMs)} />
-      </div>
-
-      <div className="trend-block">
-        <div className="trend-label">Accuracy trend (7 days)</div>
-        <Sparkline points={summary.trend.map((t) => t.accuracy)} />
+      <div className="subject-rows">
+        {SUBJECTS.map((s) => {
+          const sp = profile.subjects[s.id]
+          const belt = beltForLevel(sp.currentLevel - 1)
+          const level = getSubjectLevel(s.id, sp.currentLevel)
+          const wk = weeklySummary(profile, s.id)
+          return (
+            <div key={s.id} className="subject-row">
+              <div className="sr-head">
+                <span className="sr-icon">{s.icon}</span>
+                <div className="sr-name">
+                  <strong>{s.name}</strong>
+                  <span className="sr-belt">
+                    <span className="belt-chip" style={{ '--belt': belt.color, '--belt-ink': belt.ink }} />
+                    {belt.name} · L{sp.currentLevel}/{subjectMaxLevel(s.id)} · {level.title}
+                  </span>
+                </div>
+              </div>
+              <div className="sr-stats">
+                <span>{wk.sets} sets</span>
+                <span>{wk.sets ? `${Math.round(wk.avgAccuracy * 100)}%` : '—'} acc</span>
+                <span>{wk.sets ? fmtTime(wk.avgTimeMs) : '—'}</span>
+              </div>
+              <div className="sr-move">
+                <button className="chip-btn tiny" onClick={() => moveLevel(profile.id, s.id, sp.currentLevel - 1)}>
+                  −
+                </button>
+                <button className="chip-btn tiny" onClick={() => moveLevel(profile.id, s.id, sp.currentLevel + 1)}>
+                  +
+                </button>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <div className="struggle-block">
@@ -98,14 +124,16 @@ function KidOverview({ profile, moveLevel }) {
           <p className="empty-note">Not enough data yet — keep practicing!</p>
         ) : (
           <ul className="struggle-list">
-            {struggles.map((s) => (
-              <li key={s.key}>
-                <span className="struggle-key">{s.key}</span>
+            {struggles.slice(0, 6).map((s) => (
+              <li key={`${s.subject}-${s.key}`}>
+                <span className="struggle-key">
+                  {s.icon} {s.key}
+                </span>
                 <span className="struggle-bar-wrap">
                   <span className="struggle-bar" style={{ width: `${Math.round(s.rate * 100)}%` }} />
                 </span>
                 <span className="struggle-rate">
-                  {s.misses}/{s.attempts} missed
+                  {s.misses}/{s.attempts}
                 </span>
               </li>
             ))}
@@ -114,86 +142,63 @@ function KidOverview({ profile, moveLevel }) {
       </div>
 
       <div className="recog-note">
-        ✏️ Handwriting corrections: <strong>{Math.round(corr * 100)}%</strong> of recognized digits
-        {corr > 0.25 ? ' — high; consider switching this kid to the keypad.' : ' — looking good.'}
-      </div>
-
-      <div className="level-move">
-        <span>Move level:</span>
-        <button className="chip-btn" onClick={() => moveLevel(profile.id, profile.currentLevel - 1)}>
-          − Down
-        </button>
-        <button className="chip-btn" onClick={() => moveLevel(profile.id, profile.currentLevel + 1)}>
-          + Up
-        </button>
+        ✏️ Math handwriting corrections: <strong>{Math.round(corr * 100)}%</strong>
+        {corr > 0.25 ? ' — high; consider the keypad for this kid.' : ' — looking good.'}
       </div>
     </section>
   )
 }
 
-function Metric({ label, value }) {
-  return (
-    <div className="metric">
-      <div className="metric-value">{value}</div>
-      <div className="metric-label">{label}</div>
-    </div>
-  )
-}
-
-function Sparkline({ points }) {
-  if (!points || points.length === 0) return <div className="empty-note">No sets yet.</div>
-  const w = 280
-  const h = 60
-  const max = 1
-  const min = 0
-  const step = points.length > 1 ? w / (points.length - 1) : w
-  const coords = points.map((p, i) => {
-    const x = points.length > 1 ? i * step : w / 2
-    const y = h - ((p - min) / (max - min)) * h
-    return [x, y]
-  })
-  const path = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
-  return (
-    <svg className="sparkline" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-      <line x1="0" y1={h - 0.95 * h} x2={w} y2={h - 0.95 * h} className="spark-goal" />
-      <path d={path} className="spark-line" />
-      {coords.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="3" className="spark-dot" />
-      ))}
-    </svg>
-  )
-}
-
 function SettingsPanel({ state, updateSettings, setPin }) {
+  const [subjectId, setSubjectId] = useState('math')
   const [pinDraft, setPinDraft] = useState('')
+  const subject = getSubject(subjectId)
+  const usesSpeed = subject.masteryType === 'speed-accuracy'
+
   return (
     <div className="parent-body">
       <section className="settings-section">
         <h2>Level targets</h2>
         <p className="section-note">
-          A kid levels up only when they beat BOTH the time and accuracy target on their current level.
+          A kid earns a belt only when they beat the target(s) on their current level.
+          {usesSpeed ? ' Math needs both time and accuracy.' : ' This subject is accuracy-only — no time pressure.'}
         </p>
+
+        <div className="subject-subtabs">
+          {SUBJECTS.map((s) => (
+            <button
+              key={s.id}
+              className={`subtab ${subjectId === s.id ? 'active' : ''}`}
+              onClick={() => setSubjectId(s.id)}
+            >
+              {s.icon} {s.name}
+            </button>
+          ))}
+        </div>
+
         <div className="level-settings">
-          {LEVELS.map((lvl) => {
-            const cfg = state.settings.perLevel[lvl.id]
+          {subject.levels.map((lvl) => {
+            const cfg = state.settings.thresholds[subjectId][lvl.id]
             return (
-              <div key={lvl.id} className="level-row">
+              <div key={lvl.id} className={`level-row ${usesSpeed ? '' : 'no-speed'}`}>
                 <div className="level-row-title">
                   <span className="lr-num">{lvl.id}</span> {lvl.title}
                 </div>
-                <label>
-                  Time (s)
-                  <input
-                    type="number"
-                    min="20"
-                    value={cfg.speedSec}
-                    onChange={(e) =>
-                      updateSettings((s) => {
-                        s.perLevel[lvl.id].speedSec = Number(e.target.value) || cfg.speedSec
-                      })
-                    }
-                  />
-                </label>
+                {usesSpeed && (
+                  <label>
+                    Time (s)
+                    <input
+                      type="number"
+                      min="20"
+                      value={cfg.speedSec ?? ''}
+                      onChange={(e) =>
+                        updateSettings((st) => {
+                          st.thresholds[subjectId][lvl.id].speedSec = Number(e.target.value) || cfg.speedSec
+                        })
+                      }
+                    />
+                  </label>
+                )}
                 <label>
                   Accuracy %
                   <input
@@ -202,9 +207,9 @@ function SettingsPanel({ state, updateSettings, setPin }) {
                     max="100"
                     value={Math.round(cfg.accuracy * 100)}
                     onChange={(e) =>
-                      updateSettings((s) => {
+                      updateSettings((st) => {
                         const pct = Number(e.target.value)
-                        s.perLevel[lvl.id].accuracy = Math.min(1, Math.max(0.5, pct / 100))
+                        st.thresholds[subjectId][lvl.id].accuracy = Math.min(1, Math.max(0.5, pct / 100))
                       })
                     }
                   />
@@ -213,12 +218,12 @@ function SettingsPanel({ state, updateSettings, setPin }) {
                   Problems
                   <input
                     type="number"
-                    min="5"
+                    min="4"
                     max="40"
                     value={cfg.problems}
                     onChange={(e) =>
-                      updateSettings((s) => {
-                        s.perLevel[lvl.id].problems = Math.max(5, Number(e.target.value) || cfg.problems)
+                      updateSettings((st) => {
+                        st.thresholds[subjectId][lvl.id].problems = Math.max(4, Number(e.target.value) || cfg.problems)
                       })
                     }
                   />
@@ -230,7 +235,7 @@ function SettingsPanel({ state, updateSettings, setPin }) {
       </section>
 
       <section className="settings-section">
-        <h2>Handwriting recognition</h2>
+        <h2>Handwriting recognition (Math)</h2>
         <label className="wide-label">
           Confidence threshold: {Math.round(state.settings.confidenceThreshold * 100)}%
           <input
@@ -305,7 +310,6 @@ function DataPanel({ exportState, importState, resetAll }) {
     a.click()
     URL.revokeObjectURL(url)
   }
-
   function doImport(e) {
     const file = e.target.files?.[0]
     if (!file) return

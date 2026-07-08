@@ -1,5 +1,5 @@
-// Renders the current problem large and centered. The problem should dominate
-// the screen — no timer, no hints, no clutter.
+// Renders the current problem large and centered. The problem dominates the
+// screen — no timer, no hints.
 
 export default function ProblemView({ problem }) {
   const d = problem.display
@@ -10,6 +10,33 @@ export default function ProblemView({ problem }) {
         <span className="operand">{d.a}</span>
         <span className="operator">{d.op}</span>
         <span className="operand">{d.b}</span>
+        <span className="equals">=</span>
+        <span className="answer-slot">?</span>
+      </div>
+    )
+  }
+
+  if (d.type === 'expression') {
+    return (
+      <div className={`problem expression ${d.instruction ? 'instruction' : ''}`}>
+        <span className="expr-text">{d.text}</span>
+        {d.equals && (
+          <>
+            <span className="equals"> = </span>
+            <span className="answer-slot">?</span>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  if (d.type === 'power') {
+    return (
+      <div className="problem horizontal">
+        <span className="operand">
+          {d.base}
+          <sup className="exponent">{d.exp}</sup>
+        </span>
         <span className="equals">=</span>
         <span className="answer-slot">?</span>
       </div>
@@ -49,6 +76,15 @@ export default function ProblemView({ problem }) {
         <div className="identify-prompt">
           How many parts are shaded? <span className="of-denom">(out of {d.denom})</span>
         </div>
+      </div>
+    )
+  }
+
+  if (d.type === 'question') {
+    return (
+      <div className="problem quiz">
+        {d.passage && <div className="passage">{d.passage}</div>}
+        <div className="quiz-prompt">{d.prompt}</div>
       </div>
     )
   }

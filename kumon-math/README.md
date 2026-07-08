@@ -1,27 +1,46 @@
-# 🥋 Math Belts — Kumon-style Math Practice
+# 🥋 Math Belts — Kumon-style Practice (Math • Reading • History • Science)
 
 A warm, kid-friendly single-page app that gives two children daily, mastery-gated
-math drills — Kumon-style. Built with React + Vite, tuned for iPad/tablet, and
-deployable to Netlify. All progress is stored locally (no accounts, no servers).
+practice — Kumon-style — across **four subjects**: Math, Reading, History, and
+Science. Built with React + Vite, tuned for iPad/tablet, and deployable to
+Netlify. All progress is stored locally (no accounts, no servers).
 
-Two profiles ship out of the box: **Oliver** 🦊 and **Noah** 🐨.
+Two profiles ship out of the box: **Oliver** 🦊 and **Noah** 🐨, each with an
+**independent belt track per subject** — a kid never sees the other's stats.
+
+## Subjects
+
+Pick a kid, then a subject. Each subject has its own placement check, level map,
+belts, and progress.
+
+| Subject | Levels | How you level up |
+| --- | --- | --- |
+| 🔢 **Math** | 20 (grade 1 → 6) | **Speed + accuracy** — fluency through repetition |
+| 📖 **Reading** | 6 | **Accuracy only** — no timer; rushing hurts comprehension |
+| 🏛️ **History** | 5 | **Accuracy only** |
+| 🔬 **Science** | 5 | **Accuracy only** |
+
+Math is procedurally generated (never hardcoded). Reading/History/Science draw
+from curated question banks in `src/data/content/` — easy to extend by adding
+more items to any pool.
 
 ---
 
 ## The Kumon philosophy, baked in
 
-- **One tiny concept per level.** 11 levels, each introducing a single new skill.
-- **Mastery gating.** A kid advances only when they beat **both** the speed target
-  and the accuracy target (default 95%) on their current level. Miss either and
-  they repeat the level — with a **freshly generated** set every time.
-- **Short daily sets.** 10–20 problems, ~10 minutes.
+- **One tiny concept per level.** Each level introduces a single new skill.
+- **Mastery gating.** In **Math**, a kid advances only when they beat **both** the
+  speed and accuracy targets (default 95%). In **Reading/History/Science** the belt
+  is earned on **accuracy alone** — a read-and-think subject shouldn't reward
+  rushing. Miss the target and they repeat the level with a **fresh** set.
+- **Short daily sets.** 8–20 problems, ~10 minutes.
 - **No hints or teaching during drills.** Fluency through repetition. Missed
   problems are reviewed in the end-of-set summary and automatically **re-appear
   in the next set** (spaced repetition).
 - **No visible timer during the drill.** Time is tracked silently and revealed
   only in the summary — this avoids rush-guessing and anxiety.
 
-## Levels
+## Math levels (1 → 20)
 
 1. Addition within 10
 2. Addition within 20
@@ -34,8 +53,18 @@ Two profiles ship out of the box: **Oliver** 🦊 and **Noah** 🐨.
 9. Mixed multiplication & division facts
 10. Multi-digit multiplication
 11. Simple fractions (identify, compare, add same denominator)
+12. Two-digit × two-digit multiplication
+13. Long division (÷ one digit)
+14. Order of operations
+15. Fraction of a number
+16. Percentages
+17. Powers & squares
+18. Rounding
+19. Decimals (add & subtract) — uses the keypad with a decimal point
+20. Averages (mean)
 
-Problems are **always generated on the fly** — never hardcoded.
+Math problems are **always generated on the fly** — never hardcoded — so
+repeating a level always gives a fresh set.
 
 ## Gamification (mastery-based only)
 

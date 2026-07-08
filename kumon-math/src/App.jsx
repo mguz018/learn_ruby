@@ -1,53 +1,67 @@
 import { useState } from 'react'
 import { useApp } from './context/AppContext.jsx'
 import HomeScreen from './components/HomeScreen.jsx'
+import SubjectPicker from './components/SubjectPicker.jsx'
 import LevelMap from './components/LevelMap.jsx'
 import PlacementTest from './components/PlacementTest.jsx'
 import Session from './components/Session.jsx'
 import Summary from './components/Summary.jsx'
 import ParentDashboard from './components/ParentDashboard.jsx'
 
-// Lightweight screen router — no external routing dependency needed for a
-// single-flow kiosk-style app.
 export default function App() {
   const { state } = useApp()
-  const [nav, setNav] = useState({ screen: 'home', profileId: null })
+  const [nav, setNav] = useState({ screen: 'home', profileId: null, subjectId: null })
   const [summary, setSummary] = useState(null)
 
   const go = (screen, extra = {}) => setNav((n) => ({ ...n, screen, ...extra }))
   const profile = nav.profileId ? state.profiles[nav.profileId] : null
 
+  function openSubject(subjectId) {
+    const sp = profile.subjects[subjectId]
+    go(sp.placementDone ? 'map' : 'placement', { subjectId })
+  }
+
   return (
     <div className="app-shell">
       {nav.screen === 'home' && (
         <HomeScreen
-          onPickProfile={(id) => {
-            const p = state.profiles[id]
-            go(p.placementDone ? 'map' : 'placement', { profileId: id })
-          }}
+          onPickProfile={(id) => go('subjects', { profileId: id })}
           onParent={() => go('parent')}
+        />
+      )}
+
+      {nav.screen === 'subjects' && profile && (
+        <SubjectPicker
+          profile={profile}
+          onPick={openSubject}
+          onHome={() => go('home', { profileId: null, subjectId: null })}
         />
       )}
 
       {nav.screen === 'map' && profile && (
         <LevelMap
           profile={profile}
-          onStart={() => go('session', { sessionLevel: profile.currentLevel })}
-          onHome={() => go('home', { profileId: null })}
+          subjectId={nav.subjectId}
+          onStart={() =>
+            go('session', { sessionLevel: profile.subjects[nav.subjectId].currentLevel })
+          }
+          onBack={() => go('subjects')}
         />
       )}
 
       {nav.screen === 'placement' && profile && (
         <PlacementTest
           profile={profile}
+          subjectId={nav.subjectId}
           onDone={() => go('map')}
-          onHome={() => go('home', { profileId: null })}
+          onBack={() => go('subjects')}
         />
       )}
 
       {nav.screen === 'session' && profile && (
         <Session
           profile={profile}
+          subjectId={nav.subjectId}
           levelId={nav.sessionLevel}
           onFinish={(result) => {
             setSummary(result)
@@ -57,20 +71,21 @@ export default function App() {
         />
       )}
 
-      {nav.screen === 'summary' && summary && profile && (
+      {nav.screen === 'summary' && summary && (
         <Summary
           result={summary}
           profile={state.profiles[summary.profileId]}
-          onNextSet={() => {
-            const p = state.profiles[summary.profileId]
-            go('session', { sessionLevel: p.currentLevel })
-          }}
+          onNextSet={() =>
+            go('session', {
+              sessionLevel: state.profiles[summary.profileId].subjects[summary.subjectId].currentLevel,
+            })
+          }
           onDone={() => go('map')}
         />
       )}
 
       {nav.screen === 'parent' && (
-        <ParentDashboard onExit={() => go('home', { profileId: null })} />
+        <ParentDashboard onExit={() => go('home', { profileId: null, subjectId: null })} />
       )}
     </div>
   )

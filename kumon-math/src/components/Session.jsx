@@ -1,31 +1,30 @@
 import { useMemo, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { generateSet } from '../lib/problems.js'
-import { getLevel } from '../data/levels.js'
+import { getSubject, getSubjectLevel } from '../data/subjects.js'
 import ProblemView from './ProblemView.jsx'
 import Keypad from './Keypad.jsx'
 import HandwritingInput from './HandwritingInput.jsx'
 import { playCorrect, playWrong } from '../lib/sound.js'
 
-export default function Session({ profile, levelId, onFinish, onQuit }) {
+export default function Session({ profile, subjectId, levelId, onFinish, onQuit }) {
   const { state, finishSet, setInputMode } = useApp()
-  const level = getLevel(levelId)
-  const thresholds = state.settings.perLevel[levelId] || {}
+  const subject = getSubject(subjectId)
+  const level = getSubjectLevel(subjectId, levelId)
+  const thresholds = state.settings.thresholds?.[subjectId]?.[levelId] || {}
   const setSize = thresholds.problems ?? level.defaultProblems
 
   const problems = useMemo(
-    () => generateSet(levelId, setSize, profile.missedQueue),
-    // Regenerate only when the level/size changes, not on every render.
+    () => generateSet(subjectId, levelId, setSize, profile.subjects[subjectId].missedQueue),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [levelId, setSize],
+    [subjectId, levelId, setSize],
   )
 
   const [index, setIndex] = useState(0)
   const [inputMode, setMode] = useState(profile.inputMode)
-  const [feedback, setFeedback] = useState(null) // 'correct' | 'wrong'
+  const [feedback, setFeedback] = useState(null)
   const [rewritePrompt, setRewritePrompt] = useState(false)
 
-  // Per-problem input state.
   const [keypadValue, setKeypadValue] = useState('')
   const [hwPayload, setHwPayload] = useState({ value: '', unsure: false, filledCount: 0 })
   const [choiceValue, setChoiceValue] = useState('')
@@ -36,7 +35,10 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
   const recog = useRef({ corrections: 0, recognized: 0 })
 
   const problem = problems[index]
-  const expectedLength = problem.answer.replace('-', '').length
+  const isChoice = problem.answerType === 'choice'
+  const needsKeypad = !!problem.needsKeypad
+  const canHandwrite = subject.numeric && !isChoice && !needsKeypad
+  const expectedLength = problem.answer.replace(/[^0-9]/g, '').length || 1
 
   function resetInputs() {
     setKeypadValue('')
@@ -53,13 +55,13 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
   }
 
   function currentGiven() {
-    if (problem.answerType === 'choice') return choiceValue
-    if (inputMode === 'keypad') return keypadValue
+    if (isChoice) return choiceValue
+    if (inputMode === 'keypad' || needsKeypad) return keypadValue
     return hwPayload.value
   }
 
   function grade(given) {
-    if (problem.answerType === 'choice') return given === problem.answer
+    if (isChoice) return given === problem.answer
     if (given === '') return false
     return Number(given) === Number(problem.answer)
   }
@@ -67,24 +69,17 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
   function onCheck() {
     if (advancing.current) return
     const given = currentGiven()
+    const usingHandwriting = canHandwrite && inputMode === 'handwriting'
 
-    // Nothing entered yet — ignore.
-    if (given === '' || (problem.answerType === 'number' && inputMode === 'handwriting' && hwPayload.filledCount === 0)) {
-      return
-    }
-    // Unsure handwriting — ask for a rewrite rather than guessing.
-    if (inputMode === 'handwriting' && problem.answerType === 'number' && hwPayload.unsure) {
+    if (given === '' || (usingHandwriting && hwPayload.filledCount === 0)) return
+    if (usingHandwriting && hwPayload.unsure) {
       setRewritePrompt(true)
       return
     }
 
-    // Timer starts on the first submitted answer (silent — never shown mid-set).
+    // Timer starts on the first submitted answer — never shown mid-set.
     if (startTime.current === null) startTime.current = Date.now()
-
-    // Recognition stats for parent tuning.
-    if (inputMode === 'handwriting' && problem.answerType === 'number') {
-      recog.current.recognized += hwPayload.filledCount
-    }
+    if (usingHandwriting) recog.current.recognized += hwPayload.filledCount
 
     const correct = grade(given)
     results.current.push({ problem, given, correct })
@@ -96,9 +91,8 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
     setTimeout(() => {
       advancing.current = false
       setFeedback(null)
-      if (index + 1 >= problems.length) {
-        finalize()
-      } else {
+      if (index + 1 >= problems.length) finalize()
+      else {
         setIndex((i) => i + 1)
         resetInputs()
       }
@@ -107,7 +101,7 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
 
   function finalize() {
     const timeMs = startTime.current ? Date.now() - startTime.current : 0
-    const result = finishSet(profile.id, levelId, {
+    const result = finishSet(profile.id, subjectId, levelId, {
       results: results.current,
       timeMs,
       recognition: recog.current,
@@ -115,10 +109,14 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
     onFinish(result)
   }
 
-  const progress = ((index) / problems.length) * 100
+  const progress = (index / problems.length) * 100
+  const showToggle = canHandwrite
 
   return (
-    <div className={`screen session ${feedback ? `flash-${feedback}` : ''}`} style={{ '--accent': profile.color }}>
+    <div
+      className={`screen session ${subject.numeric ? '' : 'quiz-session'} ${feedback ? `flash-${feedback}` : ''}`}
+      style={{ '--accent': subject.color }}
+    >
       <header className="session-head">
         <button className="ghost-btn" onClick={onQuit}>
           ✕ Quit
@@ -129,19 +127,28 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
             {index + 1} / {problems.length}
           </span>
         </div>
-        <button className="mode-toggle" onClick={toggleMode} title="Switch input">
-          {inputMode === 'handwriting' ? '⌨️' : '✏️'}
-        </button>
+        {showToggle ? (
+          <button className="mode-toggle" onClick={toggleMode} title="Switch input">
+            {inputMode === 'handwriting' ? '⌨️' : '✏️'}
+          </button>
+        ) : (
+          <span style={{ width: 44 }} />
+        )}
       </header>
 
-      <main className="problem-stage">
+      <main className={`problem-stage ${subject.numeric ? '' : 'quiz-stage'}`}>
         <ProblemView problem={problem} />
       </main>
 
       <section className="input-stage">
-        {problem.answerType === 'choice' ? (
-          <ChoiceInput choices={problem.choices} value={choiceValue} onPick={setChoiceValue} />
-        ) : inputMode === 'handwriting' ? (
+        {isChoice ? (
+          <ChoiceInput
+            choices={problem.choices}
+            value={choiceValue}
+            onPick={setChoiceValue}
+            textChoices={!!problem.textChoices}
+          />
+        ) : canHandwrite && inputMode === 'handwriting' ? (
           <HandwritingInput
             key={problem.uid}
             expectedLength={expectedLength}
@@ -150,13 +157,17 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
             onChange={setHwPayload}
             onCorrection={() => (recog.current.corrections += 1)}
             onModelFailed={() => {
-              // Auto-fall back to keypad so the child is never stuck.
               setMode('keypad')
               setInputMode(profile.id, 'keypad')
             }}
           />
         ) : (
-          <Keypad value={keypadValue} onChange={setKeypadValue} maxLen={expectedLength} />
+          <Keypad
+            value={keypadValue}
+            onChange={setKeypadValue}
+            maxLen={needsKeypad ? 6 : expectedLength}
+            allowDecimal={needsKeypad}
+          />
         )}
 
         {rewritePrompt && (
@@ -171,8 +182,25 @@ export default function Session({ profile, levelId, onFinish, onQuit }) {
   )
 }
 
-function ChoiceInput({ choices, value, onPick }) {
-  const labels = { '<': 'less than', '=': 'equal', '>': 'greater than' }
+function ChoiceInput({ choices, value, onPick, textChoices }) {
+  const symbolLabels = { '<': 'less than', '=': 'equal', '>': 'greater than' }
+  if (textChoices) {
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F']
+    return (
+      <div className="choice-input text">
+        {choices.map((c, i) => (
+          <button
+            key={c}
+            className={`text-choice ${value === c ? 'selected' : ''}`}
+            onClick={() => onPick(c)}
+          >
+            <span className="choice-letter">{letters[i]}</span>
+            <span className="choice-text-label">{c}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
   return (
     <div className="choice-input">
       {choices.map((c) => (
@@ -180,7 +208,7 @@ function ChoiceInput({ choices, value, onPick }) {
           key={c}
           className={`choice-btn ${value === c ? 'selected' : ''}`}
           onClick={() => onPick(c)}
-          aria-label={labels[c] || c}
+          aria-label={symbolLabels[c] || c}
         >
           {c}
         </button>

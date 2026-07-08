@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { loadState, saveState, defaultState, todayKey } from '../lib/storage.js'
+import { loadState, saveState, defaultState, migrate, todayKey } from '../lib/storage.js'
 import { evaluateSet, nextLevelAfter } from '../lib/mastery.js'
 import { recordProfilePractice, updateFamilyStreak } from '../lib/streaks.js'
-import { getLevel } from '../data/levels.js'
+import { getSubject, getSubjectLevel, subjectMaxLevel } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
 
 const AppContext = createContext(null)
@@ -13,12 +13,10 @@ export function useApp() {
   return ctx
 }
 
-const HISTORY_CAP = 400
+const HISTORY_CAP = 600
 
 export function AppProvider({ children }) {
   const [state, setState] = useState(loadState)
-  // Keep a synchronous mirror so finishSet can compute + return a summary from
-  // the freshest state without waiting for a re-render.
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -30,7 +28,6 @@ export function AppProvider({ children }) {
     stateRef.current = draft
     setState(draft)
   }
-
   function updateState(mutator) {
     const draft = structuredClone(stateRef.current)
     mutator(draft)
@@ -38,9 +35,9 @@ export function AppProvider({ children }) {
     return draft
   }
 
-  function thresholdsFor(state, levelId) {
-    const lvl = getLevel(levelId)
-    const cfg = state.settings.perLevel[levelId] || {}
+  function thresholdsFor(st, subjectId, levelId) {
+    const lvl = getSubjectLevel(subjectId, levelId)
+    const cfg = st.settings.thresholds?.[subjectId]?.[levelId] || {}
     return {
       speedSec: cfg.speedSec ?? lvl.defaultSpeedSec,
       accuracy: cfg.accuracy ?? lvl.defaultAccuracy,
@@ -56,62 +53,71 @@ export function AppProvider({ children }) {
         })
       },
 
-      setPlacement(profileId, level) {
+      setPlacement(profileId, subjectId, level) {
         updateState((d) => {
-          const p = d.profiles[profileId]
-          p.currentLevel = level
-          p.placementDone = true
+          const sp = d.profiles[profileId].subjects[subjectId]
+          sp.currentLevel = level
+          sp.placementDone = true
         })
       },
 
-      // Core: process a completed set, mutate progress, and return a summary.
-      finishSet(profileId, playedLevelId, tally) {
+      finishSet(profileId, subjectId, playedLevelId, tally) {
         const { results, timeMs, recognition } = tally
         const draft = structuredClone(stateRef.current)
-        const p = draft.profiles[profileId]
-        const thresholds = thresholdsFor(draft, playedLevelId)
+        const profile = draft.profiles[profileId]
+        const sp = profile.subjects[subjectId]
+        const subject = getSubject(subjectId)
+        const thresholds = thresholdsFor(draft, subjectId, playedLevelId)
 
         const correct = results.filter((r) => r.correct).length
         const total = results.length
-        const evalResult = evaluateSet({ levelId: playedLevelId, correct, total, timeMs, thresholds })
+        const evalResult = evaluateSet({
+          correct,
+          total,
+          timeMs,
+          thresholds,
+          masteryType: subject.masteryType,
+        })
 
-        // Personal best (best time on a set that met the accuracy target).
-        const prevBest = p.bests[playedLevelId]
+        // Personal best time (among accuracy-passing sets) — beat-your-own-time.
+        const prevBest = sp.bests[playedLevelId]
         let beatBest = false
         if (evalResult.accuracyPass) {
           if (!prevBest || timeMs < prevBest.timeMs) {
             beatBest = !!prevBest
-            p.bests[playedLevelId] = { timeMs, accuracy: evalResult.accuracy }
+            sp.bests[playedLevelId] = { timeMs, accuracy: evalResult.accuracy }
           }
         }
 
-        // Missed problems -> queue for spaced repetition next set.
-        const missed = results.filter((r) => !r.correct).map((r) => r.problem)
-        p.missedQueue = missed
+        // Missed -> spaced repetition next set.
+        sp.missedQueue = results.filter((r) => !r.correct).map((r) => r.problem)
 
-        // Struggle detection.
+        // Struggle detection (per subject).
         for (const r of results) {
           const key = r.problem.factKey || 'other'
-          if (!p.struggles[key]) p.struggles[key] = { misses: 0, attempts: 0 }
-          p.struggles[key].attempts += 1
-          if (!r.correct) p.struggles[key].misses += 1
+          if (!sp.struggles[key]) sp.struggles[key] = { misses: 0, attempts: 0 }
+          sp.struggles[key].attempts += 1
+          if (!r.correct) sp.struggles[key].misses += 1
         }
 
-        // Handwriting recognition tuning stats.
         if (recognition) {
-          p.recognition.corrections += recognition.corrections || 0
-          p.recognition.recognized += recognition.recognized || 0
+          profile.recognition.corrections += recognition.corrections || 0
+          profile.recognition.recognized += recognition.recognized || 0
         }
 
-        // Level progression.
-        const { nextLevel, leveledUp } = nextLevelAfter(p, playedLevelId, evalResult.mastered)
-        const fromLevel = p.currentLevel
-        p.currentLevel = nextLevel
+        const { nextLevel, leveledUp } = nextLevelAfter(
+          sp.currentLevel,
+          playedLevelId,
+          evalResult.mastered,
+          subjectMaxLevel(subjectId),
+        )
+        const fromLevel = sp.currentLevel
+        sp.currentLevel = nextLevel
 
-        // History (capped).
-        p.history.push({
+        profile.history.push({
           date: todayKey(),
           ts: Date.now(),
+          subjectId,
           levelId: playedLevelId,
           timeMs,
           accuracy: evalResult.accuracy,
@@ -119,23 +125,22 @@ export function AppProvider({ children }) {
           correct,
           leveledUp,
         })
-        if (p.history.length > HISTORY_CAP) {
-          p.history = p.history.slice(-HISTORY_CAP)
-        }
+        if (profile.history.length > HISTORY_CAP) profile.history = profile.history.slice(-HISTORY_CAP)
 
-        // Streaks.
-        const streakResult = recordProfilePractice(p)
+        const streakResult = recordProfilePractice(profile)
         updateFamilyStreak(draft.family, draft.profiles)
 
         commit(draft)
 
         return {
           profileId,
+          subjectId,
           playedLevelId,
           correct,
           total,
           timeMs,
           accuracy: evalResult.accuracy,
+          usesSpeed: evalResult.usesSpeed,
           mastered: evalResult.mastered,
           speedPass: evalResult.speedPass,
           accuracyPass: evalResult.accuracyPass,
@@ -146,24 +151,23 @@ export function AppProvider({ children }) {
           nextLevel,
           newBelt: leveledUp ? beltForLevel(nextLevel - 1) : null,
           prevBest,
-          currentBest: p.bests[playedLevelId],
+          currentBest: sp.bests[playedLevelId],
           beatBest,
           missedProblems: results.filter((r) => !r.correct),
-          streakCount: p.streak.count,
+          streakCount: profile.streak.count,
           streakFroze: streakResult.froze,
           familyStreak: draft.family.streak,
         }
       },
 
-      // Parent dashboard knobs.
       updateSettings(mutator) {
         updateState((d) => mutator(d.settings))
       },
 
-      moveLevel(profileId, level) {
+      moveLevel(profileId, subjectId, level) {
         updateState((d) => {
-          const clamped = Math.max(1, Math.min(11, level))
-          d.profiles[profileId].currentLevel = clamped
+          const clamped = Math.max(1, Math.min(subjectMaxLevel(subjectId), level))
+          d.profiles[profileId].subjects[subjectId].currentLevel = clamped
         })
       },
 
@@ -175,9 +179,8 @@ export function AppProvider({ children }) {
 
       importState(json) {
         const parsed = typeof json === 'string' ? JSON.parse(json) : json
-        // Basic shape check before committing.
         if (!parsed || !parsed.profiles) throw new Error('That does not look like a Math Belts backup.')
-        commit(loadStateFrom(parsed))
+        commit(migrate(parsed))
       },
 
       exportState() {
@@ -193,24 +196,4 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => ({ state, ...actions }), [state, actions])
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
-}
-
-// Re-run migration on imported data by round-tripping through storage helpers.
-function loadStateFrom(parsed) {
-  const base = defaultState()
-  const merged = { ...base, ...parsed }
-  merged.settings = { ...base.settings, ...(parsed.settings || {}) }
-  merged.settings.perLevel = { ...base.settings.perLevel, ...(parsed.settings?.perLevel || {}) }
-  merged.family = { ...base.family, ...(parsed.family || {}) }
-  merged.profiles = {}
-  for (const id of Object.keys(base.profiles)) {
-    const p = parsed.profiles?.[id] || base.profiles[id]
-    merged.profiles[id] = {
-      ...base.profiles[id],
-      ...p,
-      streak: { ...base.profiles[id].streak, ...(p.streak || {}) },
-      recognition: { ...base.profiles[id].recognition, ...(p.recognition || {}) },
-    }
-  }
-  return merged
 }

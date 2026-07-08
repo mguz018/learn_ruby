@@ -1,62 +1,68 @@
-// localStorage-backed persistence for all progress. One JSON blob under a
-// versioned key so we can migrate later if needed.
+// localStorage-backed persistence. Progress is per-subject: each profile keeps
+// an independent belt track for Math, Reading, History, and Science. Streaks,
+// input preference, and recognition stats stay at the profile level (shared).
 
-import { LEVELS } from '../data/levels.js'
+import { SUBJECTS, SUBJECT_IDS } from '../data/subjects.js'
 
 const STORAGE_KEY = 'mathbelts.state.v1'
 
-// Default MNIST digit model. This is loaded at runtime from a CDN (see
-// recognition.js). It is overridable from the parent dashboard so a better /
-// self-hosted model can be swapped in without a code change.
+// MNIST digit model, loaded at runtime from a CDN (see recognition.js) and
+// overridable from the parent dashboard.
 export const DEFAULT_MODEL_URL =
   'https://storage.googleapis.com/learnjs-data/model-builder/mnist_v1/model.json'
 
-function defaultPerLevel() {
+function subjectProgress() {
+  return {
+    currentLevel: 1,
+    placementDone: false,
+    bests: {}, // levelId -> { timeMs, accuracy }
+    missedQueue: [],
+    struggles: {}, // factKey -> { misses, attempts }
+  }
+}
+
+function defaultThresholds() {
   const out = {}
-  for (const lvl of LEVELS) {
-    out[lvl.id] = {
-      speedSec: lvl.defaultSpeedSec,
-      accuracy: lvl.defaultAccuracy,
-      problems: lvl.defaultProblems,
+  for (const s of SUBJECTS) {
+    out[s.id] = {}
+    for (const lvl of s.levels) {
+      out[s.id][lvl.id] = {
+        speedSec: lvl.defaultSpeedSec,
+        accuracy: lvl.defaultAccuracy,
+        problems: lvl.defaultProblems,
+      }
     }
   }
   return out
 }
 
 export function newProfile(id, name, color, avatar) {
+  const subjects = {}
+  for (const sid of SUBJECT_IDS) subjects[sid] = subjectProgress()
   return {
     id,
     name,
     color,
     avatar,
-    currentLevel: 1,
-    inputMode: 'handwriting', // 'handwriting' | 'keypad'
-    placementDone: false,
-    bests: {}, // levelId -> { timeMs, accuracy }
-    missedQueue: [], // problems to re-inject next set
-    struggles: {}, // factKey -> { misses, attempts }
-    recognition: { corrections: 0, recognized: 0 }, // handwriting tuning stats
-    streak: {
-      count: 0,
-      lastPracticeDate: null, // 'YYYY-MM-DD'
-      freezes: 1,
-      freezeWeek: null, // ISO week key the current freeze was granted for
-    },
-    history: [], // { date, ts, levelId, timeMs, accuracy, total, correct, leveledUp }
+    inputMode: 'handwriting', // 'handwriting' | 'keypad' (math numeric entry)
+    recognition: { corrections: 0, recognized: 0 },
+    streak: { count: 0, lastPracticeDate: null, freezes: 1, freezeWeek: null },
+    history: [], // { date, ts, subjectId, levelId, timeMs, accuracy, total, correct, leveledUp }
+    subjects,
   }
 }
 
 export function defaultState() {
   return {
-    version: 1,
+    version: 2,
     profiles: {
       oliver: newProfile('oliver', 'Oliver', '#2c6bed', '🦊'),
       noah: newProfile('noah', 'Noah', '#e0662b', '🐨'),
     },
-    family: { streak: 0, lastDate: null, prevDate: null },
+    family: { streak: 0, lastDate: null },
     settings: {
       pin: '1234',
-      perLevel: defaultPerLevel(),
+      thresholds: defaultThresholds(),
       modelUrl: DEFAULT_MODEL_URL,
       confidenceThreshold: 0.6,
     },
@@ -67,8 +73,7 @@ export function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return defaultState()
-    const parsed = JSON.parse(raw)
-    return migrate(parsed)
+    return migrate(JSON.parse(raw))
   } catch (err) {
     console.warn('Failed to load state, starting fresh:', err)
     return defaultState()
@@ -83,25 +88,81 @@ export function saveState(state) {
   }
 }
 
-// Fill in any keys added after a profile was first created, so upgrades don't
-// crash on missing fields.
-function migrate(state) {
+// Merge a loaded/imported blob onto defaults, upgrading the old single-track
+// (v1) shape into per-subject progress where needed.
+export function migrate(state) {
   const base = defaultState()
   const merged = { ...base, ...state }
+
   merged.settings = { ...base.settings, ...(state.settings || {}) }
-  merged.settings.perLevel = { ...base.settings.perLevel, ...(state.settings?.perLevel || {}) }
+  // Deep-merge thresholds so new levels/subjects always have defaults.
+  merged.settings.thresholds = mergeThresholds(base.settings.thresholds, state.settings)
   merged.family = { ...base.family, ...(state.family || {}) }
-  merged.profiles = { ...state.profiles }
+
+  merged.profiles = {}
   for (const id of Object.keys(base.profiles)) {
-    const p = state.profiles?.[id] || base.profiles[id]
-    merged.profiles[id] = {
-      ...base.profiles[id],
-      ...p,
-      streak: { ...base.profiles[id].streak, ...(p.streak || {}) },
-      recognition: { ...base.profiles[id].recognition, ...(p.recognition || {}) },
-    }
+    merged.profiles[id] = migrateProfile(base.profiles[id], state.profiles?.[id])
   }
   return merged
+}
+
+function mergeThresholds(baseTh, oldSettings) {
+  const out = {}
+  for (const sid of Object.keys(baseTh)) {
+    out[sid] = { ...baseTh[sid] }
+    // v2 shape
+    const provided = oldSettings?.thresholds?.[sid]
+    if (provided) {
+      for (const lvl of Object.keys(provided)) out[sid][lvl] = { ...out[sid][lvl], ...provided[lvl] }
+    }
+  }
+  // v1 shape: settings.perLevel held math thresholds
+  if (oldSettings?.perLevel) {
+    for (const lvl of Object.keys(oldSettings.perLevel)) {
+      out.math[lvl] = { ...out.math[lvl], ...oldSettings.perLevel[lvl] }
+    }
+  }
+  return out
+}
+
+function migrateProfile(baseProfile, p) {
+  if (!p) return baseProfile
+  const out = {
+    ...baseProfile,
+    ...p,
+    streak: { ...baseProfile.streak, ...(p.streak || {}) },
+    recognition: { ...baseProfile.recognition, ...(p.recognition || {}) },
+  }
+
+  if (p.subjects) {
+    // v2: ensure every subject exists.
+    out.subjects = {}
+    for (const sid of SUBJECT_IDS) {
+      out.subjects[sid] = { ...subjectProgress(), ...(p.subjects[sid] || {}) }
+    }
+  } else {
+    // v1 -> v2: move old top-level math progress into subjects.math.
+    out.subjects = {}
+    for (const sid of SUBJECT_IDS) out.subjects[sid] = subjectProgress()
+    out.subjects.math = {
+      currentLevel: p.currentLevel ?? 1,
+      placementDone: p.placementDone ?? false,
+      bests: p.bests || {},
+      missedQueue: p.missedQueue || [],
+      struggles: p.struggles || {},
+    }
+  }
+
+  // Ensure history entries carry a subjectId (old ones were all math).
+  out.history = (p.history || []).map((h) => ({ subjectId: h.subjectId || 'math', ...h }))
+
+  // Drop stale v1 top-level fields.
+  delete out.currentLevel
+  delete out.placementDone
+  delete out.bests
+  delete out.missedQueue
+  delete out.struggles
+  return out
 }
 
 // ---- Date helpers (local time) ----------------------------------------------
@@ -112,19 +173,13 @@ export function todayKey(d = new Date()) {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
-
 export function dateFromKey(key) {
   const [y, m, d] = key.split('-').map(Number)
   return new Date(y, m - 1, d)
 }
-
 export function daysBetween(aKey, bKey) {
-  const a = dateFromKey(aKey)
-  const b = dateFromKey(bKey)
-  return Math.round((b - a) / 86400000)
+  return Math.round((dateFromKey(bKey) - dateFromKey(aKey)) / 86400000)
 }
-
-// ISO-week key like "2026-W28", used to grant one streak freeze per week.
 export function isoWeekKey(d = new Date()) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
   const dayNum = date.getUTCDay() || 7
