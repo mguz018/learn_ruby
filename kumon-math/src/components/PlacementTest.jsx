@@ -1,20 +1,27 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { generateProblem } from '../lib/problems.js'
-import { getSubject, subjectMaxLevel } from '../data/subjects.js'
+import { getSubject, subjectMaxLevel, recommendedStart } from '../data/subjects.js'
 import ProblemView from './ProblemView.jsx'
 import Keypad from './Keypad.jsx'
 
-// Quick mixed quiz: one problem per level, climbing until the first miss, which
-// places the kid at that level. Pass everything -> top level.
+// Anchor-and-adjust placement: start near the kid's expected level (their
+// current seat) and move up while they're getting things right, or down while
+// they're missing — so an advanced kid confirms their level in a question or
+// two instead of grinding up from level 1.
 export default function PlacementTest({ profile, subjectId, onDone, onBack }) {
   const { setPlacement } = useApp()
   const subject = getSubject(subjectId)
   const maxLevel = subjectMaxLevel(subjectId)
+  const anchor = Math.min(
+    maxLevel,
+    profile.subjects[subjectId].currentLevel || recommendedStart(profile.id, subjectId),
+  )
 
   const [started, setStarted] = useState(false)
-  const [level, setLevel] = useState(1)
-  const [problem, setProblem] = useState(() => generateProblem(subjectId, 1))
+  const [level, setLevel] = useState(anchor)
+  const [mode, setMode] = useState('anchor') // 'anchor' | 'up' | 'down'
+  const [problem, setProblem] = useState(() => generateProblem(subjectId, anchor))
   const [value, setValue] = useState('')
   const [choice, setChoice] = useState('')
   const [count, setCount] = useState(0)
@@ -24,26 +31,31 @@ export default function PlacementTest({ profile, subjectId, onDone, onBack }) {
     onDone()
   }
 
+  function goTo(nextLevel, nextMode) {
+    setLevel(nextLevel)
+    setMode(nextMode)
+    setProblem(generateProblem(subjectId, nextLevel))
+    setValue('')
+    setChoice('')
+    setCount((c) => c + 1)
+  }
+
   function submit() {
     const given = problem.answerType === 'choice' ? choice : value
     if (given === '') return
     const correct =
       problem.answerType === 'choice' ? given === problem.answer : Number(given) === Number(problem.answer)
 
-    if (!correct) {
-      place(level)
-      return
+    if (correct) {
+      // Descending and now correct -> we found their floor.
+      if (mode === 'down') return place(level)
+      if (level >= maxLevel) return place(maxLevel)
+      return goTo(level + 1, 'up')
     }
-    const nextLevel = level + 1
-    setCount((c) => c + 1)
-    if (nextLevel > maxLevel) {
-      place(maxLevel)
-      return
-    }
-    setLevel(nextLevel)
-    setProblem(generateProblem(subjectId, nextLevel))
-    setValue('')
-    setChoice('')
+    // Wrong:
+    if (mode === 'up') return place(level) // was climbing; this level is the practice level
+    if (level <= 1) return place(1)
+    return goTo(level - 1, 'down')
   }
 
   if (!started) {
@@ -56,14 +68,14 @@ export default function PlacementTest({ profile, subjectId, onDone, onBack }) {
           <div className="summary-avatar">{subject.icon}</div>
           <h1>{subject.name} Check</h1>
           <p>
-            Hi {profile.name}! Let’s find your starting belt in {subject.name} with a few quick
-            questions. Just do your best!
+            Hi {profile.name}! We’ll start around Level {anchor} and just check a couple of
+            questions to find your best starting belt. Do your best!
           </p>
           <button className="primary-btn big" onClick={() => setStarted(true)}>
             Start
           </button>
-          <button className="ghost-btn" onClick={() => place(1)}>
-            Skip — start at Level 1
+          <button className="ghost-btn" onClick={() => place(anchor)}>
+            Skip — keep Level {anchor}
           </button>
         </div>
       </div>
@@ -76,7 +88,7 @@ export default function PlacementTest({ profile, subjectId, onDone, onBack }) {
       style={{ '--accent': subject.color }}
     >
       <header className="session-head">
-        <button className="ghost-btn" onClick={() => place(1)}>
+        <button className="ghost-btn" onClick={() => place(anchor)}>
           ✕
         </button>
         <div className="placement-label">Finding your level… (Q{count + 1})</div>

@@ -2,7 +2,7 @@
 // an independent belt track for Math, Reading, History, and Science. Streaks,
 // input preference, and recognition stats stay at the profile level (shared).
 
-import { SUBJECTS, SUBJECT_IDS } from '../data/subjects.js'
+import { SUBJECTS, SUBJECT_IDS, recommendedStart } from '../data/subjects.js'
 
 const STORAGE_KEY = 'mathbelts.state.v1'
 
@@ -38,7 +38,10 @@ function defaultThresholds() {
 
 export function newProfile(id, name, color, avatar) {
   const subjects = {}
-  for (const sid of SUBJECT_IDS) subjects[sid] = subjectProgress()
+  for (const sid of SUBJECT_IDS) {
+    // Seat the kid at a grade-appropriate belt out of the box.
+    subjects[sid] = { ...subjectProgress(), currentLevel: recommendedStart(id, sid), placementDone: true }
+  }
   return {
     id,
     name,
@@ -155,6 +158,20 @@ function migrateProfile(baseProfile, p) {
 
   // Ensure history entries carry a subjectId (old ones were all math).
   out.history = (p.history || []).map((h) => ({ subjectId: h.subjectId || 'math', ...h }))
+
+  // Seat any UNTOUCHED subject at the kid's recommended level, so an advanced
+  // kid parked at level 1 (e.g. after skipping placement) gets a proper path
+  // without losing any real progress. "Untouched" = still level 1, no bests,
+  // and no completed sets in that subject.
+  for (const sid of SUBJECT_IDS) {
+    const sp = out.subjects[sid]
+    const noHistory = !out.history.some((h) => h.subjectId === sid)
+    const noBests = !sp.bests || Object.keys(sp.bests).length === 0
+    if ((sp.currentLevel || 1) <= 1 && noBests && noHistory) {
+      sp.currentLevel = recommendedStart(baseProfile.id, sid)
+      sp.placementDone = true
+    }
+  }
 
   // Drop stale v1 top-level fields.
   delete out.currentLevel

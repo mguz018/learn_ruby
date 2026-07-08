@@ -45,6 +45,7 @@ export default function App() {
           onStart={() =>
             go('session', { sessionLevel: profile.subjects[nav.subjectId].currentLevel })
           }
+          onRecheck={() => go('placement')}
           onBack={() => go('subjects')}
         />
       )}

@@ -1563,3 +1563,10 @@ input[type='range'] {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.recheck-btn {
+  font-size: 0.95rem;
+  padding: 12px;
+  width: 100%;
+  color: var(--ink-soft);
+}

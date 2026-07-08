@@ -3,7 +3,7 @@ import { getSubject } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
 import { fmtTime } from '../lib/stats.js'
 
-export default function LevelMap({ profile, subjectId, onStart, onBack }) {
+export default function LevelMap({ profile, subjectId, onStart, onBack, onRecheck }) {
   const { state } = useApp()
   const p = state.profiles[profile.id]
   const subject = getSubject(subjectId)
@@ -59,6 +59,9 @@ export default function LevelMap({ profile, subjectId, onStart, onBack }) {
       <div className="map-foot">
         <button className="primary-btn big" onClick={onStart}>
           ▶ Start Level {sp.currentLevel} · {getSubject(subjectId).levels[sp.currentLevel - 1]?.title}
+        </button>
+        <button className="ghost-btn recheck-btn" onClick={onRecheck}>
+          Too easy or too hard? Take the quick level check
         </button>
       </div>
     </div>

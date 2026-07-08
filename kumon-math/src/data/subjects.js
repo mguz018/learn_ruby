@@ -77,6 +77,22 @@ export const SUBJECTS = [
 
 export const SUBJECT_IDS = SUBJECTS.map((s) => s.id)
 
+// Grade-appropriate starting levels so advanced kids don't grind through
+// kindergarten content. Oliver is an advanced 5th grader; Noah an advanced 3rd
+// grader. These seat each kid on a sensible belt out of the box; the placement
+// check anchors here (and adjusts up/down), and the mastery gate self-corrects
+// if a seat is slightly off. Parents can also nudge levels in the dashboard.
+export const RECOMMENDED_START = {
+  oliver: { math: 13, reading: 5, history: 3, science: 4 },
+  noah: { math: 8, reading: 3, history: 2, science: 2 },
+  _default: { math: 1, reading: 1, history: 1, science: 1 },
+}
+
+export function recommendedStart(profileId, subjectId) {
+  const r = RECOMMENDED_START[profileId] || RECOMMENDED_START._default
+  return Math.min(r[subjectId] || 1, getSubject(subjectId).levels.length)
+}
+
 export function getSubject(id) {
   return SUBJECTS.find((s) => s.id === id) || SUBJECTS[0]
 }
