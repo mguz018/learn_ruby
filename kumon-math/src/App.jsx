@@ -42,9 +42,7 @@ export default function App() {
         <LevelMap
           profile={profile}
           subjectId={nav.subjectId}
-          onStart={() =>
-            go('session', { sessionLevel: profile.subjects[nav.subjectId].currentLevel })
-          }
+          onStartLevel={(levelId) => go('session', { sessionLevel: levelId })}
           onRecheck={() => go('placement')}
           onBack={() => go('subjects')}
         />

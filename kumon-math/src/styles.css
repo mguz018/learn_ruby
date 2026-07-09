@@ -1832,3 +1832,104 @@ input[type='range'] {
 .belt-chip {
   border-radius: 7px;
 }
+
+/* ===================== Clickable level map ===================== */
+.map-hint {
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: -4px 0 0;
+}
+.path-node-row {
+  position: relative;
+  display: flex;
+  padding: 14px 0;
+  z-index: 1;
+}
+.path-node-row.left {
+  justify-content: flex-start;
+}
+.path-node-row.right {
+  justify-content: flex-end;
+}
+/* The node itself is now a button */
+.path-node {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border-radius: 22px;
+  transition: transform 0.1s ease;
+}
+.path-node-row.right .path-node {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.node-info {
+  display: flex;
+  flex-direction: column;
+}
+/* Playable nodes invite a tap; locked ones look inert */
+.path-node.current,
+.path-node.done {
+  cursor: pointer;
+}
+.path-node.current:active,
+.path-node.done:active {
+  transform: scale(0.97);
+}
+.path-node.current:hover .node-medal,
+.path-node.done:hover .node-medal {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px rgba(60, 40, 120, 0.28);
+}
+.path-node.current:hover .node-info,
+.path-node.done:hover .node-info {
+  box-shadow: var(--shadow-lg);
+}
+.path-node.ahead {
+  cursor: default;
+}
+.path-node.ahead .node-info {
+  opacity: 0.75;
+}
+.node-replay {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+/* Locked tap feedback */
+.path-node.shake .node-medal {
+  animation: nodeShake 0.4s ease;
+}
+@keyframes nodeShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-4deg); }
+  75% { transform: translateX(5px) rotate(4deg); }
+}
+.locked-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 800;
+  padding: 14px 20px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  animation: toastIn 0.2s ease;
+  max-width: 90%;
+  text-align: center;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+}
