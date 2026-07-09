@@ -59,8 +59,8 @@ export function defaultState() {
   return {
     version: 2,
     profiles: {
-      oliver: newProfile('oliver', 'Oliver', '#2c6bed', '🦊'),
-      noah: newProfile('noah', 'Noah', '#e0662b', '🐨'),
+      oliver: newProfile('oliver', 'Oliver', '#2c6bed', '🦒'),
+      noah: newProfile('noah', 'Noah', '#e0662b', '🐧🦉'),
     },
     family: { streak: 0, lastDate: null },
     settings: {
@@ -133,6 +133,9 @@ function migrateProfile(baseProfile, p) {
   const out = {
     ...baseProfile,
     ...p,
+    // Avatars aren't user-editable, so always adopt the current canonical
+    // avatar — this lets avatar changes reach already-saved profiles.
+    avatar: baseProfile.avatar,
     streak: { ...baseProfile.streak, ...(p.streak || {}) },
     recognition: { ...baseProfile.recognition, ...(p.recognition || {}) },
   }
