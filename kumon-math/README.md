@@ -164,8 +164,25 @@ To self-host for maximum reliability, drop `model.json` + its `*.bin` weights in
 normalized (cropped to the ink, scaled to ~20px, centered in 28px) before
 inference to match MNIST conventions.
 
+## Cloud sync (optional)
+
+By default everything is stored locally (see below). To sync progress across
+devices, the app supports an optional **Supabase** backend using a no-password
+**family sync code**. It's off until you add two environment variables at build
+time — see **[SETUP-SYNC.md](./SETUP-SYNC.md)** for the full step-by-step, and
+`supabase/schema.sql` for the database schema.
+
+When configured, the app is offline-first: local `localStorage` stays the working
+copy, and changes sync to the cloud (last-write-wins by timestamp) whenever
+online. When not configured, the sync UI politely says so and everything else
+works unchanged.
+
+> Sync keys are injected at build time, so cloud sync requires a Git-connected
+> deploy (Netlify/Vercel), not a drag-and-drop upload.
+
 ## Data & privacy
 
-Everything is stored in this browser's `localStorage` under `mathbelts.state.v1`.
-No data leaves the device. Use the JSON export in the parent dashboard to back up
-or move progress between devices.
+By default everything is stored in this browser's `localStorage` under
+`mathbelts.state.v1` — no data leaves the device. Use the JSON export in the
+parent dashboard to back up or move progress between devices, or turn on cloud
+sync above. With sync on, data lives only in your own Supabase project.

@@ -2145,3 +2145,27 @@ input[type='range'] {
 @media (max-width: 520px) {
   .avatar-picker { grid-template-columns: repeat(6, 1fr); }
 }
+
+/* ===================== Cloud sync panel ===================== */
+.sync-section h2 { display: flex; align-items: center; gap: 10px; }
+.sync-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); display: inline-block; }
+.sync-dot.synced { background: var(--good); }
+.sync-dot.syncing { background: var(--warn); animation: pulseDot 1s infinite; }
+.sync-dot.error { background: var(--bad); }
+@keyframes pulseDot { 50% { opacity: 0.35; } }
+.sync-code {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  letter-spacing: 0.12em;
+  text-align: center;
+  background: var(--bg);
+  border: 2px dashed var(--accent);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 12px 0;
+  color: var(--accent);
+  user-select: all;
+}
+.sync-status-line { color: var(--ink-soft); font-weight: 700; font-size: 0.85rem; margin: 8px 0 0; }
+.sync-join { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }

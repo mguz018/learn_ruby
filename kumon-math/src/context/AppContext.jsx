@@ -5,6 +5,16 @@ import { recordProfilePractice, updateFamilyStreak } from '../lib/streaks.js'
 import { getSubject, getSubjectLevel, subjectMaxLevel, SUBJECT_IDS } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
 import { evaluateStickers, getSticker } from '../data/stickers.js'
+import {
+  isConfigured,
+  createFamily,
+  pullFamily,
+  pushFamily,
+  getStoredCode,
+  setStoredCode,
+  formatCode,
+  normalizeCode,
+} from '../lib/sync.js'
 
 const AppContext = createContext(null)
 
@@ -15,19 +25,49 @@ export function useApp() {
 }
 
 const HISTORY_CAP = 600
+const PUSH_DEBOUNCE = 1500
 
 export function AppProvider({ children }) {
   const [state, setState] = useState(loadState)
   const stateRef = useRef(state)
   stateRef.current = state
 
+  // --- Cloud sync state ---
+  const [syncCode, setSyncCode] = useState(getStoredCode())
+  const [syncStatus, setSyncStatus] = useState('off') // off | syncing | synced | error
+  const pushTimer = useRef(null)
+
   useEffect(() => {
     saveState(state)
   }, [state])
 
+  function schedulePush() {
+    if (!isConfigured() || !getStoredCode()) return
+    if (pushTimer.current) clearTimeout(pushTimer.current)
+    pushTimer.current = setTimeout(async () => {
+      try {
+        setSyncStatus('syncing')
+        await pushFamily(getStoredCode(), stateRef.current)
+        setSyncStatus('synced')
+      } catch (err) {
+        console.warn('Sync push failed:', err)
+        setSyncStatus('error')
+      }
+    }, PUSH_DEBOUNCE)
+  }
+
+  // Local change: stamp, persist, and (if enabled) push to the cloud.
   function commit(draft) {
+    draft.updatedAt = Date.now()
     stateRef.current = draft
     setState(draft)
+    schedulePush()
+  }
+  // Remote change: adopt as-is, no timestamp bump, no echo push (uses setState
+  // directly rather than commit(), so schedulePush() is never called).
+  function applyRemote(remote) {
+    stateRef.current = remote
+    setState(remote)
   }
   function updateState(mutator) {
     const draft = structuredClone(stateRef.current)
@@ -235,6 +275,79 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const value = useMemo(() => ({ state, ...actions }), [state, actions])
+  // Pull remote on mount (and when the app regains focus) and reconcile by
+  // last-write-wins timestamp.
+  async function pullAndReconcile() {
+    const code = getStoredCode()
+    if (!isConfigured() || !code) return
+    try {
+      setSyncStatus('syncing')
+      const remote = await pullFamily(code)
+      if (remote && (remote.updatedAt || 0) > (stateRef.current.updatedAt || 0)) {
+        applyRemote(migrate(remote))
+      } else if (!remote || (stateRef.current.updatedAt || 0) > (remote.updatedAt || 0)) {
+        await pushFamily(code, stateRef.current)
+      }
+      setSyncStatus('synced')
+    } catch (err) {
+      console.warn('Sync pull failed:', err)
+      setSyncStatus('error')
+    }
+  }
+
+  useEffect(() => {
+    pullAndReconcile()
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') pullAndReconcile()
+    }
+    document.addEventListener('visibilitychange', onFocus)
+    return () => document.removeEventListener('visibilitychange', onFocus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const sync = {
+    available: isConfigured(),
+    enabled: !!syncCode,
+    status: syncStatus,
+    code: syncCode ? formatCode(syncCode) : null,
+
+    async enable() {
+      const code = await createFamily(stateRef.current)
+      setStoredCode(code)
+      setSyncCode(normalizeCode(code))
+      setSyncStatus('synced')
+      return formatCode(code)
+    },
+
+    async join(input) {
+      const remote = await pullFamily(input)
+      if (!remote) throw new Error('No family found for that code. Double-check it and try again.')
+      setStoredCode(input)
+      setSyncCode(normalizeCode(input))
+      applyRemote(migrate(remote))
+      setSyncStatus('synced')
+    },
+
+    async pushNow() {
+      const code = getStoredCode()
+      if (!code) return
+      setSyncStatus('syncing')
+      try {
+        await pushFamily(code, stateRef.current)
+        setSyncStatus('synced')
+      } catch (err) {
+        setSyncStatus('error')
+        throw err
+      }
+    },
+
+    disable() {
+      setStoredCode(null)
+      setSyncCode(null)
+      setSyncStatus('off')
+    },
+  }
+
+  const value = useMemo(() => ({ state, ...actions, sync }), [state, actions, sync])
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

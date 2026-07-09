@@ -62,6 +62,7 @@ export function newProfile(id, name, color, avatar) {
 export function defaultState() {
   return {
     version: 2,
+    updatedAt: 0, // ms timestamp of last local change, for sync last-write-wins
     profiles: {
       oliver: newProfile('oliver', 'Oliver', '#2c6bed', '🦒'),
       noah: newProfile('noah', 'Noah', '#e0662b', '🐧🦉'),

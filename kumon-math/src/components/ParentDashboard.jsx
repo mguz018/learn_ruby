@@ -370,6 +370,7 @@ function DataPanel({ exportState, importState, resetAll }) {
 
   return (
     <div className="parent-body">
+      <SyncPanel />
       <section className="settings-section">
         <h2>Backup &amp; restore</h2>
         <p className="section-note">All progress lives on this device. Export a JSON backup to keep it safe.</p>
@@ -398,5 +399,122 @@ function DataPanel({ exportState, importState, resetAll }) {
         </button>
       </section>
     </div>
+  )
+}
+
+function statusLabel(s) {
+  return s === 'synced'
+    ? 'up to date ✓'
+    : s === 'syncing'
+      ? 'syncing…'
+      : s === 'error'
+        ? 'connection problem'
+        : 'idle'
+}
+
+function SyncPanel() {
+  const { sync } = useApp()
+  const [joinCode, setJoinCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [showCode, setShowCode] = useState('')
+
+  if (!sync.available) {
+    return (
+      <section className="settings-section sync-section">
+        <h2>☁️ Sync across devices</h2>
+        <p className="section-note">
+          Cloud sync isn’t switched on for this site yet. A grown-up can enable it by adding the
+          Supabase keys in Netlify (see <code>SETUP-SYNC.md</code> in the project). Until then,
+          progress is saved on this device — use Export/Import below to move it.
+        </p>
+      </section>
+    )
+  }
+
+  async function run(fn, okMsg) {
+    setBusy(true)
+    setMsg('')
+    try {
+      const r = await fn()
+      if (okMsg) setMsg(okMsg)
+      return r
+    } catch (e) {
+      setMsg('✕ ' + (e.message || 'Something went wrong'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="settings-section sync-section">
+      <h2>
+        ☁️ Sync across devices <span className={`sync-dot ${sync.status}`} />
+      </h2>
+      {sync.enabled ? (
+        <>
+          <p className="section-note">
+            This device is syncing. Enter this code on another device to share the same progress:
+          </p>
+          <div className="sync-code">{sync.code}</div>
+          <div className="data-actions">
+            <button className="chip-btn" onClick={() => navigator.clipboard?.writeText(sync.code)}>
+              Copy code
+            </button>
+            <button className="chip-btn" disabled={busy} onClick={() => run(() => sync.pushNow(), '✓ Synced.')}>
+              Sync now
+            </button>
+            <button className="chip-btn" onClick={sync.disable}>
+              Stop on this device
+            </button>
+          </div>
+          <p className="sync-status-line">Status: {statusLabel(sync.status)}</p>
+        </>
+      ) : (
+        <>
+          <p className="section-note">
+            Turn on sync to back up progress to the cloud and use it on your other devices.
+          </p>
+          <div className="data-actions">
+            <button
+              className="primary-btn"
+              disabled={busy}
+              onClick={() =>
+                run(async () => setShowCode(await sync.enable()), 'Sync is on! Save this code for other devices.')
+              }
+            >
+              Turn on sync
+            </button>
+          </div>
+          {showCode && <div className="sync-code">{showCode}</div>}
+          <div className="sync-join">
+            <p className="section-note" style={{ marginBottom: 6 }}>
+              Already have a family code from another device?
+            </p>
+            <div className="data-actions">
+              <input
+                className="text-input"
+                placeholder="XXXX-XXXX-XXXX"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
+              />
+              <button
+                className="chip-btn"
+                disabled={busy || !joinCode.trim()}
+                onClick={() =>
+                  run(
+                    () => sync.join(joinCode),
+                    '✓ Connected! This device now shares that family’s progress.',
+                  ).then(() => setJoinCode(''))
+                }
+              >
+                Connect
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+      {msg && <div className="data-msg">{msg}</div>}
+    </section>
   )
 }
