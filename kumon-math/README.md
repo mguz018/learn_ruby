@@ -1,12 +1,13 @@
-# 🥋 Math Belts — Kumon-style Practice (Math • Reading • History • Science)
+# 📈 Exponential Go — Kumon-style Practice for Kids
 
 A warm, kid-friendly single-page app that gives two children daily, mastery-gated
-practice — Kumon-style — across **four subjects**: Math, Reading, History, and
-Science. Built with React + Vite, tuned for iPad/tablet, and deployable to
-Netlify. All progress is stored locally (no accounts, no servers).
+practice — Kumon-style — across **eight subjects**. Built with React + Vite, tuned
+for iPad/tablet, and deployable to Netlify. All progress is stored locally (no
+accounts, no servers).
 
 Two profiles ship out of the box: **Oliver** 🦊 and **Noah** 🐨, each with an
-**independent belt track per subject** — a kid never sees the other's stats.
+**independent belt track per subject** — a kid never sees the other's stats, and
+each starts at a grade-appropriate level.
 
 ## Subjects
 
@@ -19,10 +20,14 @@ belts, and progress.
 | 📖 **Reading** | 6 | **Accuracy only** — no timer; rushing hurts comprehension |
 | 🏛️ **History** | 5 | **Accuracy only** |
 | 🔬 **Science** | 5 | **Accuracy only** |
+| 🗺️ **Geography** | 5 | **Accuracy only** |
+| 🔤 **Spelling** | 4 | **Accuracy only** |
+| 🧩 **Logic & Code** | 4 | **Accuracy only** |
+| 🗣️ **Spanish** | 5 | **Accuracy only** |
 
-Math is procedurally generated (never hardcoded). Reading/History/Science draw
-from curated question banks in `src/data/content/` — easy to extend by adding
-more items to any pool.
+Math is procedurally generated (never hardcoded). The other subjects draw from
+curated question banks in `src/data/content/` — easy to extend by adding more
+items to any pool.
 
 ---
 

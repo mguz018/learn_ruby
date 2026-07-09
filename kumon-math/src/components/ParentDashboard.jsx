@@ -306,7 +306,7 @@ function DataPanel({ exportState, importState, resetAll }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `math-belts-backup-${Date.now()}.json`
+    a.download = `exponential-go-backup-${Date.now()}.json`
     a.click()
     URL.revokeObjectURL(url)
   }

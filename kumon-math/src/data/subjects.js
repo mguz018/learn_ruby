@@ -13,6 +13,10 @@
 import { READING } from './content/reading.js'
 import { HISTORY } from './content/history.js'
 import { SCIENCE } from './content/science.js'
+import { GEOGRAPHY } from './content/geography.js'
+import { SPANISH } from './content/spanish.js'
+import { LOGIC } from './content/logic.js'
+import { SPELLING } from './content/spelling.js'
 
 const MATH_LEVELS = [
   { id: 1, gen: 'addWithin10', title: 'Adding to 10', concept: 'Add two numbers that make 10 or less', example: '3 + 4', defaultSpeedSec: 120, defaultAccuracy: 0.95, defaultProblems: 20 },
@@ -68,11 +72,45 @@ const SCIENCE_LEVELS = [
   bank(5, 'Cells & Adaptations', 'Cells, atoms, and how living things survive', 'cells', SCIENCE.advanced),
 ]
 
+const GEOGRAPHY_LEVELS = [
+  bank(1, 'Continents & Oceans', 'The 7 continents and 5 oceans', '7 continents', GEOGRAPHY.continents),
+  bank(2, 'U.S. States', 'States, capitals, and landmarks', 'capital of Texas', GEOGRAPHY.usa),
+  bank(3, 'World Capitals', 'Countries and their capitals', 'Paris, France', GEOGRAPHY.world),
+  bank(4, 'Landforms', 'Rivers, mountains, and deserts', 'the Amazon', GEOGRAPHY.landforms),
+  bank(5, 'Map Skills', 'Directions, hemispheres, and maps', 'the Equator', GEOGRAPHY.mapskills),
+]
+
+const SPANISH_LEVELS = [
+  bank(1, 'Greetings', 'Hello, goodbye, please, thank you', 'hola = hello', SPANISH.greetings),
+  bank(2, 'Numbers & Colors', 'Count and name colors', 'rojo = red', SPANISH.numberscolors),
+  bank(3, 'Animals & Food', 'Everyday words for animals and food', 'perro = dog', SPANISH.animalsfood),
+  bank(4, 'Family & Home', 'Family members and everyday words', 'casa = house', SPANISH.family),
+  bank(5, 'Useful Phrases', 'Short sentences and questions', '¿Cómo estás?', SPANISH.phrases),
+]
+
+const LOGIC_LEVELS = [
+  bank(1, 'Patterns', 'Find what comes next', '2, 4, 6, 8, ?', LOGIC.patterns),
+  bank(2, 'Reasoning', 'Odd-one-out and if-then thinking', 'which does not belong?', LOGIC.reasoning),
+  bank(3, 'Coding Concepts', 'Algorithms, loops, and debugging', 'what is a loop?', LOGIC.coding),
+  bank(4, 'Computers & Binary', '0s and 1s, hardware and software', '0 and 1', LOGIC.computers),
+]
+
+const SPELLING_LEVELS = [
+  bank(1, 'Spell It Right', 'Choose the correct spelling', 'because', SPELLING.spelling),
+  bank(2, 'Sound-Alikes', 'Homophones like their/there', 'two / too / to', SPELLING.homophones),
+  bank(3, 'Prefixes & Suffixes', 'Word parts and their meanings', 'un- means not', SPELLING.affixes),
+  bank(4, 'Word Rules', 'Plurals, contractions, and compounds', 'baby → babies', SPELLING.wordrules),
+]
+
 export const SUBJECTS = [
-  { id: 'math', name: 'Math', icon: '🔢', color: '#2c6bed', masteryType: 'speed-accuracy', numeric: true, levels: MATH_LEVELS },
+  { id: 'math', name: 'Math', icon: '🔢', color: '#2563eb', masteryType: 'speed-accuracy', numeric: true, levels: MATH_LEVELS },
   { id: 'reading', name: 'Reading', icon: '📖', color: '#16a34a', masteryType: 'accuracy', numeric: false, levels: READING_LEVELS },
   { id: 'history', name: 'History', icon: '🏛️', color: '#b45309', masteryType: 'accuracy', numeric: false, levels: HISTORY_LEVELS },
   { id: 'science', name: 'Science', icon: '🔬', color: '#7c3aed', masteryType: 'accuracy', numeric: false, levels: SCIENCE_LEVELS },
+  { id: 'geography', name: 'Geography', icon: '🗺️', color: '#0d9488', masteryType: 'accuracy', numeric: false, levels: GEOGRAPHY_LEVELS },
+  { id: 'spelling', name: 'Spelling', icon: '🔤', color: '#db2777', masteryType: 'accuracy', numeric: false, levels: SPELLING_LEVELS },
+  { id: 'logic', name: 'Logic & Code', icon: '🧩', color: '#ea580c', masteryType: 'accuracy', numeric: false, levels: LOGIC_LEVELS },
+  { id: 'spanish', name: 'Spanish', icon: '🗣️', color: '#4f46e5', masteryType: 'accuracy', numeric: false, levels: SPANISH_LEVELS },
 ]
 
 export const SUBJECT_IDS = SUBJECTS.map((s) => s.id)
@@ -83,9 +121,9 @@ export const SUBJECT_IDS = SUBJECTS.map((s) => s.id)
 // check anchors here (and adjusts up/down), and the mastery gate self-corrects
 // if a seat is slightly off. Parents can also nudge levels in the dashboard.
 export const RECOMMENDED_START = {
-  oliver: { math: 13, reading: 5, history: 3, science: 4 },
-  noah: { math: 8, reading: 3, history: 2, science: 2 },
-  _default: { math: 1, reading: 1, history: 1, science: 1 },
+  oliver: { math: 13, reading: 5, history: 3, science: 4, geography: 3, spelling: 3, logic: 2, spanish: 2 },
+  noah: { math: 8, reading: 3, history: 2, science: 2, geography: 2, spelling: 2, logic: 1, spanish: 1 },
+  _default: { math: 1, reading: 1, history: 1, science: 1, geography: 1, spelling: 1, logic: 1, spanish: 1 },
 }
 
 export function recommendedStart(profileId, subjectId) {

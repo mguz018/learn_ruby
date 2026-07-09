@@ -179,7 +179,7 @@ export function AppProvider({ children }) {
 
       importState(json) {
         const parsed = typeof json === 'string' ? JSON.parse(json) : json
-        if (!parsed || !parsed.profiles) throw new Error('That does not look like a Math Belts backup.')
+        if (!parsed || !parsed.profiles) throw new Error('That does not look like an Exponential Go backup.')
         commit(migrate(parsed))
       },
 

@@ -13,10 +13,29 @@ export default function HomeScreen({ onPickProfile, onParent }) {
   return (
     <div className="screen home">
       <header className="home-head">
-        <h1 className="brand">
-          <span className="brand-emoji">🥋</span> Math Belts
-        </h1>
-        <p className="tagline">Pick your name to practice</p>
+        <div className="brand-lockup">
+          <span className="brand-mark" aria-hidden>
+            <svg viewBox="0 0 48 48" width="100%" height="100%">
+              <defs>
+                <linearGradient id="egGrad" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0" stopColor="#6d3bf5" />
+                  <stop offset="0.5" stopColor="#4468f0" />
+                  <stop offset="1" stopColor="#22b8d6" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M7 40 C 20 40, 24 12, 41 8"
+                fill="none"
+                stroke="url(#egGrad)"
+                strokeWidth="6"
+                strokeLinecap="round"
+              />
+              <path d="M31 8 L43 6 L41 18 Z" fill="#22b8d6" />
+            </svg>
+          </span>
+          <h1 className="brand">Exponential Go</h1>
+        </div>
+        <p className="tagline">Level up a little every day — pick your name to start</p>
       </header>
 
       <div className="profile-grid">

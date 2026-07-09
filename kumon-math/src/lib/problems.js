@@ -334,6 +334,8 @@ export function problemKey(p) {
   if (d.type === 'fraction-add') return `fa:${d.n1}/${d.denom}+${d.n2}/${d.denom}`
   if (d.type === 'fraction-compare') return `fc:${d.n1}/${d.denom}?${d.n2}/${d.denom}`
   if (d.type === 'fraction-identify') return `fi:${d.shaded}/${d.denom}`
-  if (d.type === 'question') return `q:${d.prompt}`
+  // Include the answer so questions that share a prompt (e.g. several "Which
+  // word is spelled correctly?" items) are treated as distinct.
+  if (d.type === 'question') return `q:${d.prompt}|${p.answer}`
   return p.uid
 }

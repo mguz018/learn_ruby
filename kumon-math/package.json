@@ -1,9 +1,9 @@
 {
-  "name": "kumon-math-practice",
+  "name": "exponential-go",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Kumon-style math practice web app for kids, with handwriting recognition and mastery-based progression.",
+  "description": "Exponential Go — Kumon-style multi-subject practice app for kids, with handwriting recognition and mastery-based progression.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
