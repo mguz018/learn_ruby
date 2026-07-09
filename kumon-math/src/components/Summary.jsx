@@ -68,6 +68,20 @@ export default function Summary({ result, profile, onNextSet, onDone }) {
         <div className="freeze-banner">❄️ A streak freeze saved your streak — nice save!</div>
       )}
 
+      {result.newStickers && result.newStickers.length > 0 && (
+        <div className="new-stickers">
+          <div className="new-stickers-title">🎉 New sticker{result.newStickers.length > 1 ? 's' : ''}!</div>
+          <div className="new-stickers-row">
+            {result.newStickers.map((s) => (
+              <div key={s.id} className="new-sticker">
+                <span className="new-sticker-emoji">{s.emoji}</span>
+                <span className="new-sticker-name">{s.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!result.mastered && (
         <div className="repeat-note">
           {result.accuracyPass && result.usesSpeed && !result.speedPass

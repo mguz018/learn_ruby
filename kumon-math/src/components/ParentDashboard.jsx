@@ -22,9 +22,11 @@ export default function ParentDashboard({ onExit }) {
 }
 
 function Dashboard({ onExit }) {
-  const { state, updateSettings, moveLevel, setPin, importState, exportState, resetAll } = useApp()
+  const { state, updateSettings, moveLevel, setPin, importState, exportState, resetAll, deleteProfile } =
+    useApp()
   const profiles = Object.values(state.profiles)
   const [tab, setTab] = useState('overview')
+  const canDelete = profiles.length > 1
 
   return (
     <div className="screen parent">
@@ -46,8 +48,23 @@ function Dashboard({ onExit }) {
 
       {tab === 'overview' && (
         <div className="parent-body">
+          <p className="section-note" style={{ margin: 0 }}>
+            Add or customize kids from the Home screen (tap ＋ Add a kid, or the ✏️ on a card).
+          </p>
           {profiles.map((p) => (
-            <KidOverview key={p.id} profile={p} moveLevel={moveLevel} />
+            <KidOverview
+              key={p.id}
+              profile={p}
+              moveLevel={moveLevel}
+              onDelete={
+                canDelete
+                  ? () => {
+                      if (window.confirm(`Remove ${p.name} and erase their progress? This cannot be undone.`))
+                        deleteProfile(p.id)
+                    }
+                  : null
+              }
+            />
           ))}
         </div>
       )}
@@ -57,7 +74,7 @@ function Dashboard({ onExit }) {
   )
 }
 
-function KidOverview({ profile, moveLevel }) {
+function KidOverview({ profile, moveLevel, onDelete }) {
   const corr = recognitionCorrectionRate(profile)
   const weekSets = totalSetsThisWeek(profile)
 
@@ -145,6 +162,12 @@ function KidOverview({ profile, moveLevel }) {
         ✏️ Math handwriting corrections: <strong>{Math.round(corr * 100)}%</strong>
         {corr > 0.25 ? ' — high; consider the keypad for this kid.' : ' — looking good.'}
       </div>
+
+      {onDelete && (
+        <button className="remove-kid" onClick={onDelete}>
+          Remove {profile.name}
+        </button>
+      )}
     </section>
   )
 }
@@ -232,6 +255,26 @@ function SettingsPanel({ state, updateSettings, setPin }) {
             )
           })}
         </div>
+      </section>
+
+      <section className="settings-section">
+        <h2>Daily goal</h2>
+        <label className="wide-label">
+          Sets per day for the daily-goal ring: <strong>{state.settings.dailyGoal || 2}</strong>
+          <input
+            type="range"
+            min="1"
+            max="6"
+            step="1"
+            value={state.settings.dailyGoal || 2}
+            onChange={(e) =>
+              updateSettings((s) => {
+                s.dailyGoal = Number(e.target.value)
+              })
+            }
+          />
+          <span className="section-note">Each kid’s “Today” ring fills as they finish sets.</span>
+        </label>
       </section>
 
       <section className="settings-section">

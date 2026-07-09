@@ -1,8 +1,18 @@
 import { SUBJECTS, subjectMaxLevel } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
 import { getSubjectLevel } from '../data/subjects.js'
+import { useApp } from '../context/AppContext.jsx'
+import { setsToday } from '../lib/stats.js'
+import { effectiveStreak } from '../lib/streaks.js'
+import { STICKERS } from '../data/stickers.js'
 
-export default function SubjectPicker({ profile, onPick, onHome }) {
+export default function SubjectPicker({ profile, onPick, onHome, onOpenHub }) {
+  const { state } = useApp()
+  const p = state.profiles[profile.id]
+  const goal = state.settings.dailyGoal || 2
+  const done = setsToday(p)
+  const earned = Object.keys(p.stickers || {}).length
+
   return (
     <div className="screen subjects" style={{ '--accent': profile.color }}>
       <header className="map-head">
@@ -10,11 +20,24 @@ export default function SubjectPicker({ profile, onPick, onHome }) {
           ‹ Home
         </button>
         <div className="map-title">
-          <span className="map-avatar">{profile.avatar}</span>
-          <div className="map-name">{profile.name}</div>
+          <span className="map-avatar">{p.avatar}</span>
+          <div className="map-name">{p.name}</div>
         </div>
         <span style={{ width: 60 }} />
       </header>
+
+      <button className="progress-strip" onClick={onOpenHub}>
+        <span className="ps-item">🔥 <b>{effectiveStreak(p)}</b> day streak</span>
+        <span className="ps-item">
+          🎯 Today <b>{done}/{goal}</b>
+          <span className="ps-dots">
+            {Array.from({ length: goal }).map((_, i) => (
+              <span key={i} className={`ps-dot ${i < done ? 'on' : ''}`} />
+            ))}
+          </span>
+        </span>
+        <span className="ps-item">🏅 <b>{earned}</b>/{STICKERS.length} stickers ›</span>
+      </button>
 
       <p className="subjects-prompt">What do you want to practice?</p>
 

@@ -47,6 +47,19 @@ export function recognitionCorrectionRate(profile) {
   return r.corrections / r.recognized
 }
 
+export function setsOnDate(profile, dateKey) {
+  return (profile.history || []).filter((h) => h.date === dateKey).length
+}
+
+export function setsToday(profile) {
+  return setsOnDate(profile, todayKey())
+}
+
+// Set of date keys the profile practiced on.
+export function practicedDays(profile) {
+  return new Set((profile.history || []).map((h) => h.date))
+}
+
 export function fmtTime(ms) {
   if (ms == null) return '—'
   const totalSec = Math.round(ms / 1000)

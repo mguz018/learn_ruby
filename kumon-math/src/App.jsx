@@ -7,11 +7,14 @@ import PlacementTest from './components/PlacementTest.jsx'
 import Session from './components/Session.jsx'
 import Summary from './components/Summary.jsx'
 import ParentDashboard from './components/ParentDashboard.jsx'
+import KidHub from './components/KidHub.jsx'
+import ProfileEditor from './components/ProfileEditor.jsx'
 
 export default function App() {
-  const { state } = useApp()
+  const { state, addProfile, updateProfile } = useApp()
   const [nav, setNav] = useState({ screen: 'home', profileId: null, subjectId: null })
   const [summary, setSummary] = useState(null)
+  const [editing, setEditing] = useState(null) // null | 'new' | profileId
 
   const go = (screen, extra = {}) => setNav((n) => ({ ...n, screen, ...extra }))
   const profile = nav.profileId ? state.profiles[nav.profileId] : null
@@ -21,12 +24,16 @@ export default function App() {
     go(sp.placementDone ? 'map' : 'placement', { subjectId })
   }
 
+  const editingProfile = editing && editing !== 'new' ? state.profiles[editing] : null
+
   return (
     <div className="app-shell">
       {nav.screen === 'home' && (
         <HomeScreen
           onPickProfile={(id) => go('subjects', { profileId: id })}
           onParent={() => go('parent')}
+          onAddProfile={() => setEditing('new')}
+          onEditProfile={(id) => setEditing(id)}
         />
       )}
 
@@ -35,7 +42,12 @@ export default function App() {
           profile={profile}
           onPick={openSubject}
           onHome={() => go('home', { profileId: null, subjectId: null })}
+          onOpenHub={() => go('hub')}
         />
+      )}
+
+      {nav.screen === 'hub' && profile && (
+        <KidHub profile={profile} onBack={() => go('subjects')} />
       )}
 
       {nav.screen === 'map' && profile && (
@@ -85,6 +97,18 @@ export default function App() {
 
       {nav.screen === 'parent' && (
         <ParentDashboard onExit={() => go('home', { profileId: null, subjectId: null })} />
+      )}
+
+      {editing && (
+        <ProfileEditor
+          initial={editingProfile}
+          onCancel={() => setEditing(null)}
+          onSave={(data) => {
+            if (editing === 'new') addProfile(data)
+            else updateProfile(editing, data)
+            setEditing(null)
+          }}
+        />
       )}
     </div>
   )

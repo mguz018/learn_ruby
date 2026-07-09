@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { loadState, saveState, defaultState, migrate, todayKey } from '../lib/storage.js'
+import { loadState, saveState, defaultState, migrate, newProfile, todayKey } from '../lib/storage.js'
 import { evaluateSet, nextLevelAfter } from '../lib/mastery.js'
 import { recordProfilePractice, updateFamilyStreak } from '../lib/streaks.js'
-import { getSubject, getSubjectLevel, subjectMaxLevel } from '../data/subjects.js'
+import { getSubject, getSubjectLevel, subjectMaxLevel, SUBJECT_IDS } from '../data/subjects.js'
 import { beltForLevel } from '../data/belts.js'
+import { evaluateStickers, getSticker } from '../data/stickers.js'
 
 const AppContext = createContext(null)
 
@@ -130,12 +131,20 @@ export function AppProvider({ children }) {
         const streakResult = recordProfilePractice(profile)
         updateFamilyStreak(draft.family, draft.profiles)
 
+        // Achievement stickers (earned, never bought).
+        if (streakResult.froze) profile.everFroze = true
+        if (beatBest) profile.everBeatBest = true
+        const earnedIds = evaluateStickers(profile, draft.family)
+        const newStickerIds = earnedIds.filter((id) => !profile.stickers[id])
+        for (const id of newStickerIds) profile.stickers[id] = todayKey()
+
         commit(draft)
 
         return {
           profileId,
           subjectId,
           playedLevelId,
+          newStickers: newStickerIds.map(getSticker).filter(Boolean),
           correct,
           total,
           timeMs,
@@ -174,6 +183,38 @@ export function AppProvider({ children }) {
       setPin(pin) {
         updateState((d) => {
           d.settings.pin = pin
+        })
+      },
+
+      // --- Profile management (customize kids) ---
+      addProfile({ name, avatar, color }) {
+        let newId
+        updateState((d) => {
+          const id = `k${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`
+          newId = id
+          const prof = newProfile(id, name?.trim() || 'New Kid', color || '#5b34e8', avatar || '🙂')
+          prof.custom = true
+          // Custom kids place themselves via the quick check the first time.
+          for (const sid of SUBJECT_IDS) prof.subjects[sid].placementDone = false
+          d.profiles[id] = prof
+        })
+        return newId
+      },
+
+      updateProfile(id, changes) {
+        updateState((d) => {
+          const p = d.profiles[id]
+          if (!p) return
+          if (changes.name != null) p.name = changes.name.trim() || p.name
+          if (changes.avatar) p.avatar = changes.avatar
+          if (changes.color) p.color = changes.color
+        })
+      },
+
+      deleteProfile(id) {
+        updateState((d) => {
+          if (Object.keys(d.profiles).length <= 1) return // keep at least one kid
+          delete d.profiles[id]
         })
       },
 

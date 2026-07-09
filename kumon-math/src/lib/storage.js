@@ -51,6 +51,10 @@ export function newProfile(id, name, color, avatar) {
     recognition: { corrections: 0, recognized: 0 },
     streak: { count: 0, lastPracticeDate: null, freezes: 1, freezeWeek: null },
     history: [], // { date, ts, subjectId, levelId, timeMs, accuracy, total, correct, leveledUp }
+    stickers: {}, // achievementId -> earned date
+    everFroze: false,
+    everBeatBest: false,
+    custom: false, // true for parent-added profiles
     subjects,
   }
 }
@@ -68,6 +72,7 @@ export function defaultState() {
       thresholds: defaultThresholds(),
       modelUrl: DEFAULT_MODEL_URL,
       confidenceThreshold: 0.6,
+      dailyGoal: 2, // sets per day per kid for the daily goal ring
     },
   }
 }
@@ -103,8 +108,14 @@ export function migrate(state) {
   merged.family = { ...base.family, ...(state.family || {}) }
 
   merged.profiles = {}
-  for (const id of Object.keys(base.profiles)) {
-    merged.profiles[id] = migrateProfile(base.profiles[id], state.profiles?.[id])
+  // Union of the two built-in profiles and any parent-added custom profiles.
+  const ids = new Set([...Object.keys(base.profiles), ...Object.keys(state.profiles || {})])
+  for (const id of ids) {
+    const p = state.profiles?.[id]
+    const builtIn = base.profiles[id]
+    // Custom profiles have no built-in template; build one from their own data.
+    const template = builtIn || newProfile(id, p?.name || 'Kid', p?.color || '#5b34e8', p?.avatar || '🙂')
+    merged.profiles[id] = migrateProfile(template, p, !!builtIn)
   }
   return merged
 }
@@ -128,17 +139,18 @@ function mergeThresholds(baseTh, oldSettings) {
   return out
 }
 
-function migrateProfile(baseProfile, p) {
+function migrateProfile(baseProfile, p, isBuiltIn = true) {
   if (!p) return baseProfile
   const out = {
     ...baseProfile,
     ...p,
-    // Avatars aren't user-editable, so always adopt the current canonical
-    // avatar — this lets avatar changes reach already-saved profiles.
-    avatar: baseProfile.avatar,
     streak: { ...baseProfile.streak, ...(p.streak || {}) },
     recognition: { ...baseProfile.recognition, ...(p.recognition || {}) },
+    stickers: { ...(p.stickers || {}) },
   }
+  // Built-in kids (Oliver/Noah) adopt the current canonical avatar so avatar
+  // changes reach saved profiles; custom kids keep the avatar they were given.
+  if (isBuiltIn && !p.custom) out.avatar = baseProfile.avatar
 
   if (p.subjects) {
     // v2: ensure every subject exists.
