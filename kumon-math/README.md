@@ -1,9 +1,9 @@
 # 📈 Exponential Go — Kumon-style Practice for Kids
 
 A warm, kid-friendly single-page app that gives two children daily, mastery-gated
-practice — Kumon-style — across **eight subjects**. Built with React + Vite, tuned
-for iPad/tablet, and deployable to Netlify. All progress is stored locally (no
-accounts, no servers).
+practice — Kumon-style — across **eleven subjects**. Built with React + Vite, tuned
+for iPad/tablet, and deployable to Netlify. All progress is stored locally (with
+optional cloud sync).
 
 Two profiles ship out of the box: **Oliver** 🦊 and **Noah** 🐨, each with an
 **independent belt track per subject** — a kid never sees the other's stats, and
@@ -16,7 +16,7 @@ belts, and progress.
 
 | Subject | Levels | How you level up |
 | --- | --- | --- |
-| 🔢 **Math** | 20 (grade 1 → 6) | **Speed + accuracy** — fluency through repetition |
+| 🔢 **Math** | 30 (grade 1 → middle school) | **Speed + accuracy** — fluency through repetition |
 | 📖 **Reading** | 6 | **Accuracy only** — no timer; rushing hurts comprehension |
 | 🏛️ **History** | 5 | **Accuracy only** |
 | 🔬 **Science** | 5 | **Accuracy only** |
@@ -24,6 +24,9 @@ belts, and progress.
 | 🔤 **Spelling** | 4 | **Accuracy only** |
 | 🧩 **Logic & Code** | 4 | **Accuracy only** |
 | 🗣️ **Spanish** | 5 | **Accuracy only** |
+| 💰 **Money** | 4 | **Accuracy only** |
+| 🎵 **Music** | 4 | **Accuracy only** |
+| 🎨 **Art** | 4 | **Accuracy only** |
 
 Math is procedurally generated (never hardcoded). The other subjects draw from
 curated question banks in `src/data/content/` — easy to extend by adding more
@@ -67,6 +70,16 @@ items to any pool.
 18. Rounding
 19. Decimals (add & subtract) — uses the keypad with a decimal point
 20. Averages (mean)
+21. Order of operations II (parentheses & exponents)
+22. Negative numbers
+23. Division with remainders
+24. Powers (exponents & powers of 10)
+25. Square roots (perfect squares)
+26. Decimal × and ÷
+27. Adding/subtracting unlike fractions
+28. Multiplying fractions
+29. One-step equations (solve for x)
+30. GCF & LCM
 
 Math problems are **always generated on the fly** — never hardcoded — so
 repeating a level always gives a fresh set.

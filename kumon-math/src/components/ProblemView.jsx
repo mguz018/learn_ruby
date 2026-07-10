@@ -43,6 +43,17 @@ export default function ProblemView({ problem }) {
     )
   }
 
+  if (d.type === 'sqrt') {
+    return (
+      <div className="problem horizontal">
+        <span className="sqrt-sign">√</span>
+        <span className="operand sqrt-radicand">{d.n}</span>
+        <span className="equals">=</span>
+        <span className="answer-slot">?</span>
+      </div>
+    )
+  }
+
   if (d.type === 'fraction-add') {
     return (
       <div className="problem fraction-row">

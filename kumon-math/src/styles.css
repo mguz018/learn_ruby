@@ -2169,3 +2169,11 @@ input[type='range'] {
 }
 .sync-status-line { color: var(--ink-soft); font-weight: 700; font-size: 0.85rem; margin: 8px 0 0; }
 .sync-join { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+
+/* Square-root radical */
+.sqrt-sign { color: var(--accent); font-weight: 900; }
+.sqrt-radicand {
+  border-top: 5px solid var(--ink);
+  padding: 6px 6px 0;
+  margin-left: -6px;
+}

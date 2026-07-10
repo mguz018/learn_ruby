@@ -22,6 +22,19 @@ export const BELTS = [
   { key: 'amethyst', name: 'Amethyst', color: '#7c3aed', ink: '#f5f3ff', glow: '#c4b5fd' },
   { key: 'diamond', name: 'Diamond', color: '#22d3ee', ink: '#083344', glow: '#a5f3fc' },
   { key: 'grandmaster', name: 'Grand Master', color: '#0f172a', ink: '#fde047', glow: '#7c3aed' },
+  // Space-themed "master" ranks for deep ladders (e.g. 30-level Math).
+  { key: 'titanium', name: 'Titanium', color: '#64748b', ink: '#f8fafc', glow: '#cbd5e1' },
+  { key: 'cosmic', name: 'Cosmic', color: '#4338ca', ink: '#e0e7ff', glow: '#818cf8' },
+  { key: 'nebula', name: 'Nebula', color: '#9333ea', ink: '#faf5ff', glow: '#d8b4fe' },
+  { key: 'nova', name: 'Nova', color: '#db2777', ink: '#fff1f2', glow: '#f9a8d4' },
+  { key: 'quasar', name: 'Quasar', color: '#0891b2', ink: '#ecfeff', glow: '#67e8f9' },
+  { key: 'pulsar', name: 'Pulsar', color: '#ca8a04', ink: '#fefce8', glow: '#fde047' },
+  { key: 'aurora', name: 'Aurora', color: '#059669', ink: '#ecfdf5', glow: '#6ee7b7' },
+  { key: 'meteor', name: 'Meteor', color: '#ea580c', ink: '#fff7ed', glow: '#fdba74' },
+  { key: 'comet', name: 'Comet', color: '#0ea5e9', ink: '#f0f9ff', glow: '#7dd3fc' },
+  { key: 'eclipse', name: 'Eclipse', color: '#1e1b4b', ink: '#c7d2fe', glow: '#4f46e5' },
+  { key: 'galaxy', name: 'Galaxy', color: '#312e81', ink: '#e0e7ff', glow: '#a78bfa' },
+  { key: 'infinity', name: 'Infinity', color: '#020617', ink: '#38bdf8', glow: '#0ea5e9' },
 ]
 
 export function beltForLevel(levelIndex) {

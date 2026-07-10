@@ -17,6 +17,9 @@ import { GEOGRAPHY } from './content/geography.js'
 import { SPANISH } from './content/spanish.js'
 import { LOGIC } from './content/logic.js'
 import { SPELLING } from './content/spelling.js'
+import { MONEY } from './content/money.js'
+import { MUSIC } from './content/music.js'
+import { ART } from './content/art.js'
 
 const MATH_LEVELS = [
   { id: 1, gen: 'addWithin10', title: 'Adding to 10', concept: 'Add two numbers that make 10 or less', example: '3 + 4', defaultSpeedSec: 120, defaultAccuracy: 0.95, defaultProblems: 20 },
@@ -40,6 +43,17 @@ const MATH_LEVELS = [
   { id: 18, gen: 'rounding', title: 'Rounding', concept: 'Round to the nearest ten or hundred', example: 'round 347 to tens', defaultSpeedSec: 200, defaultAccuracy: 0.9, defaultProblems: 12 },
   { id: 19, gen: 'decimalAddSub', title: 'Decimals', concept: 'Add and subtract decimals', example: '3.5 + 2.7', defaultSpeedSec: 260, defaultAccuracy: 0.9, defaultProblems: 12 },
   { id: 20, gen: 'meanAverage', title: 'Averages (Mean)', concept: 'Find the mean of a small set of numbers', example: 'mean of 4, 8, 6', defaultSpeedSec: 260, defaultAccuracy: 0.9, defaultProblems: 10 },
+  // --- Middle-school (grade 6+) ---
+  { id: 21, gen: 'orderOfOps2', title: 'Order of Ops II', concept: 'Parentheses and exponents come first', example: '(3 + 4) × 2', defaultSpeedSec: 260, defaultAccuracy: 0.9, defaultProblems: 12 },
+  { id: 22, gen: 'negatives', title: 'Negative Numbers', concept: 'Add and subtract with negatives', example: '−5 + 8', defaultSpeedSec: 240, defaultAccuracy: 0.9, defaultProblems: 12 },
+  { id: 23, gen: 'divRemainder', title: 'Division with Remainders', concept: 'Quotient and remainder', example: '47 ÷ 5', defaultSpeedSec: 260, defaultAccuracy: 0.9, defaultProblems: 10 },
+  { id: 24, gen: 'powersHi', title: 'Powers', concept: 'Exponents and powers of 10', example: '2⁴, 10³', defaultSpeedSec: 220, defaultAccuracy: 0.9, defaultProblems: 12 },
+  { id: 25, gen: 'squareRoots', title: 'Square Roots', concept: 'Roots of perfect squares', example: '√81', defaultSpeedSec: 220, defaultAccuracy: 0.9, defaultProblems: 12 },
+  { id: 26, gen: 'decimalMulDiv', title: 'Decimal × and ÷', concept: 'Multiply and divide decimals', example: '1.2 × 4', defaultSpeedSec: 260, defaultAccuracy: 0.9, defaultProblems: 12 },
+  { id: 27, gen: 'fracUnlike', title: 'Unlike Fractions', concept: 'Add/subtract different denominators', example: '1/2 + 1/3', defaultSpeedSec: 300, defaultAccuracy: 0.85, defaultProblems: 10 },
+  { id: 28, gen: 'fracMultiply', title: 'Multiply Fractions', concept: 'Multiply and simplify fractions', example: '2/3 × 3/4', defaultSpeedSec: 300, defaultAccuracy: 0.85, defaultProblems: 10 },
+  { id: 29, gen: 'oneStepEq', title: 'Solve for x', concept: 'One-step equations', example: 'x + 7 = 12', defaultSpeedSec: 280, defaultAccuracy: 0.9, defaultProblems: 10 },
+  { id: 30, gen: 'gcfLcm', title: 'GCF & LCM', concept: 'Greatest common factor & least common multiple', example: 'GCF of 12, 18', defaultSpeedSec: 300, defaultAccuracy: 0.85, defaultProblems: 10 },
 ]
 
 // Helper to build a bank level (accuracy-only, no speed target).
@@ -102,6 +116,27 @@ const SPELLING_LEVELS = [
   bank(4, 'Word Rules', 'Plurals, contractions, and compounds', 'baby → babies', SPELLING.wordrules),
 ]
 
+const MONEY_LEVELS = [
+  bank(1, 'Coins & Bills', 'What each coin is worth', 'quarter = 25¢', MONEY.coins),
+  bank(2, 'Making Change', 'Add money and make change', '$1 − 75¢', MONEY.change),
+  bank(3, 'Saving & Spending', 'Needs, wants, and budgeting', 'needs vs wants', MONEY.saving),
+  bank(4, 'Money Smarts', 'Banks, interest, and smart choices', 'interest', MONEY.smarts),
+]
+
+const MUSIC_LEVELS = [
+  bank(1, 'Notes & Staff', 'Note names and the staff', 'A–G', MUSIC.notes),
+  bank(2, 'Rhythm & Beats', 'Note values and rhythm', 'quarter note = 1 beat', MUSIC.rhythm),
+  bank(3, 'Instruments', 'Instrument families', 'violin = strings', MUSIC.instruments),
+  bank(4, 'Music Terms', 'Dynamics, tempo, and more', 'forte = loud', MUSIC.terms),
+]
+
+const ART_LEVELS = [
+  bank(1, 'Colors', 'Primary, secondary, and mixing', 'red + blue = purple', ART.colors),
+  bank(2, 'Art Terms', 'Line, shape, texture, and genres', 'portrait', ART.terms),
+  bank(3, 'Famous Artists', 'Great artists and their works', 'the Mona Lisa', ART.artists),
+  bank(4, 'Techniques & Tools', 'How art is made', 'sculpting, canvas', ART.techniques),
+]
+
 export const SUBJECTS = [
   { id: 'math', name: 'Math', icon: '🔢', color: '#2563eb', masteryType: 'speed-accuracy', numeric: true, levels: MATH_LEVELS },
   { id: 'reading', name: 'Reading', icon: '📖', color: '#16a34a', masteryType: 'accuracy', numeric: false, levels: READING_LEVELS },
@@ -111,6 +146,9 @@ export const SUBJECTS = [
   { id: 'spelling', name: 'Spelling', icon: '🔤', color: '#db2777', masteryType: 'accuracy', numeric: false, levels: SPELLING_LEVELS },
   { id: 'logic', name: 'Logic & Code', icon: '🧩', color: '#ea580c', masteryType: 'accuracy', numeric: false, levels: LOGIC_LEVELS },
   { id: 'spanish', name: 'Spanish', icon: '🗣️', color: '#4f46e5', masteryType: 'accuracy', numeric: false, levels: SPANISH_LEVELS },
+  { id: 'money', name: 'Money', icon: '💰', color: '#15803d', masteryType: 'accuracy', numeric: false, levels: MONEY_LEVELS },
+  { id: 'music', name: 'Music', icon: '🎵', color: '#9d174d', masteryType: 'accuracy', numeric: false, levels: MUSIC_LEVELS },
+  { id: 'art', name: 'Art', icon: '🎨', color: '#c2410c', masteryType: 'accuracy', numeric: false, levels: ART_LEVELS },
 ]
 
 export const SUBJECT_IDS = SUBJECTS.map((s) => s.id)
@@ -121,9 +159,9 @@ export const SUBJECT_IDS = SUBJECTS.map((s) => s.id)
 // check anchors here (and adjusts up/down), and the mastery gate self-corrects
 // if a seat is slightly off. Parents can also nudge levels in the dashboard.
 export const RECOMMENDED_START = {
-  oliver: { math: 13, reading: 5, history: 3, science: 4, geography: 3, spelling: 3, logic: 2, spanish: 2 },
-  noah: { math: 8, reading: 3, history: 2, science: 2, geography: 2, spelling: 2, logic: 1, spanish: 1 },
-  _default: { math: 1, reading: 1, history: 1, science: 1, geography: 1, spelling: 1, logic: 1, spanish: 1 },
+  oliver: { math: 13, reading: 5, history: 3, science: 4, geography: 3, spelling: 3, logic: 2, spanish: 2, money: 3, music: 2, art: 3 },
+  noah: { math: 8, reading: 3, history: 2, science: 2, geography: 2, spelling: 2, logic: 1, spanish: 1, money: 2, music: 1, art: 2 },
+  _default: { math: 1, reading: 1, history: 1, science: 1, geography: 1, spelling: 1, logic: 1, spanish: 1, money: 1, music: 1, art: 1 },
 }
 
 export function recommendedStart(profileId, subjectId) {
