@@ -90,8 +90,9 @@ repeating a level always gives a fresh set.
 
 - **One box per digit**, like a test answer sheet. The app shows the right number
   of boxes for the expected answer and tolerates blank boxes.
-- Each box is recognized **independently** with TensorFlow.js and an MNIST-style
-  digit model — never freeform multi-digit segmentation.
+- Each box is recognized **independently** by a small neural net that **ships with
+  the app** (`public/model/digits.json`, ~98% on MNIST) — never freeform
+  multi-digit segmentation. No TensorFlow.js, no CDN, works offline.
 - The recognized digit is shown **live under each box** so the kid sees what the
   app "read", with a per-box erase button to rewrite a single digit.
 - Recognition runs on **pen-up with a ~400 ms debounce** so multi-stroke digits
@@ -116,7 +117,7 @@ Default PIN is **1234** (change it inside → Settings). Behind the PIN:
   misses most (e.g. `7×8`, `sub: borrow across zero`).
 - **Adjustable knobs** — speed/accuracy targets and problems-per-set for every
   level; manually move a kid up or down a level.
-- **Handwriting tuning** — confidence threshold and the MNIST model URL.
+- **Handwriting tuning** — recognizer confidence threshold.
 - **Backup** — export/import the full progress as a JSON file.
 
 ---
@@ -143,26 +144,27 @@ The included SPA redirect rule keeps client-side routing working on refresh.
 
 ## About the handwriting model
 
-TensorFlow.js and the digit model are loaded **at runtime from a CDN**, so the app
-bundle stays small and the model can be swapped without a rebuild. The URL lives
-in **Parent Dashboard → Settings → MNIST model URL**.
+The digit recognizer is a small MLP (784 → 128 → 10) **bundled with the app** at
+`public/model/digits.json` (~210 KB gzipped). It's trained on MNIST (~98% test
+accuracy) and the forward pass runs in plain JavaScript — no TensorFlow.js, no
+CDN, no external model to break. It's fetched from the same origin the first time
+a kid uses handwriting, then cached, so it works offline.
 
-If the model (or TF.js) can't load — offline, blocked network, or a bad URL — the
-app **automatically falls back to the keypad** so a child is never stuck, and the
-reason is surfaced to the parent.
+Before inference each box is normalized MNIST-style: cropped to the ink, scaled to
+~20 px, and shifted so its center of mass sits at the middle of a 28×28 frame
+(this last step noticeably improves accuracy on real hand-drawn digits). If the
+model file can't be fetched, the notepad shows a short note and the kid can tap the
+corner toggle to use the keypad.
 
-**Choosing / hosting a model.** The default points at a public MNIST-style model.
-Any TensorFlow.js digit classifier works as long as it:
+**Retraining.** The model was produced by `scripts/train_digits.py` (pure numpy).
+To regenerate `public/model/digits.json`:
 
-- is served with permissive CORS (or self-hosted alongside the app), and
-- takes a 28×28 grayscale input and outputs 10 class scores (flat `[1, 784]` or
-  `[1, 28, 28, 1]` inputs are both handled), MNIST-style (white digit on black —
-  the app inverts the canvas for you).
-
-To self-host for maximum reliability, drop `model.json` + its `*.bin` weights into
-`public/model/` and set the model URL to `./model/model.json`. Digits are
-normalized (cropped to the ink, scaled to ~20px, centered in 28px) before
-inference to match MNIST conventions.
+```bash
+cd kumon-math
+pip install numpy
+curl -o mnist.npz https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz
+python scripts/train_digits.py
+```
 
 ## Cloud sync (optional)
 

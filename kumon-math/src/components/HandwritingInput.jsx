@@ -6,7 +6,6 @@ import { loadRecognizer, recognizeDigit, isReady } from '../lib/recognition.js'
 // per-box results into an answer string, and reports recognition stats up.
 export default function HandwritingInput({
   expectedLength,
-  modelUrl,
   confidenceThreshold,
   onChange,
   onCorrection,
@@ -24,7 +23,7 @@ export default function HandwritingInput({
       setReady(true)
       return
     }
-    loadRecognizer(modelUrl)
+    loadRecognizer()
       .then(() => {
         if (!cancelled) setReady(true)
       })
@@ -39,7 +38,7 @@ export default function HandwritingInput({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modelUrl])
+  }, [])
 
   function handleResult(index, res) {
     const before = prev.current[index]
@@ -63,7 +62,8 @@ export default function HandwritingInput({
   if (loadError) {
     return (
       <div className="hw-fallback-note">
-        Handwriting model couldn’t load. Switching to the number pad is recommended.
+        Couldn’t load handwriting right now. Check your connection and reopen, or tap the ⌨️ in the
+        top corner to use the number pad.
       </div>
     )
   }

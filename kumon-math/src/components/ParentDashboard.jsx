@@ -294,21 +294,9 @@ function SettingsPanel({ state, updateSettings, setPin }) {
             }
           />
           <span className="section-note">
-            Below this, a digit box turns yellow and asks for a rewrite instead of guessing.
+            Below this, a digit box turns yellow and asks for a rewrite instead of guessing. The
+            digit recognizer ships with the app (works offline) — no setup needed.
           </span>
-        </label>
-        <label className="wide-label">
-          MNIST model URL (loaded from CDN)
-          <input
-            type="text"
-            className="text-input"
-            value={state.settings.modelUrl}
-            onChange={(e) =>
-              updateSettings((s) => {
-                s.modelUrl = e.target.value
-              })
-            }
-          />
         </label>
       </section>
 

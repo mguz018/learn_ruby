@@ -152,14 +152,11 @@ export default function Session({ profile, subjectId, levelId, onFinish, onQuit 
           <HandwritingInput
             key={problem.uid}
             expectedLength={expectedLength}
-            modelUrl={state.settings.modelUrl}
             confidenceThreshold={state.settings.confidenceThreshold}
             onChange={setHwPayload}
             onCorrection={() => (recog.current.corrections += 1)}
-            onModelFailed={() => {
-              setMode('keypad')
-              setInputMode(profile.id, 'keypad')
-            }}
+            // Stay in handwriting even if the model can't load — the kid can tap
+            // the corner toggle to switch to the keypad if they want.
           />
         ) : (
           <Keypad
