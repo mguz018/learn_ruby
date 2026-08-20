@@ -1,2 +1,6 @@
 .idea
 +.DS_Store*
+
+# Life OS keeps your personal data local — never commit it
+life_os/data/*.json
+life_os/data/*.json.tmp
