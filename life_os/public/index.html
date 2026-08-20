@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Life OS</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%235b8def'/></svg>">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div>
+          <div class="brand-name">Life OS</div>
+          <div class="brand-sub" id="brand-sub">local</div>
+        </div>
+      </div>
+      <nav id="nav"></nav>
+      <div class="sidebar-foot">
+        <button class="btn btn-sm btn-ghost" id="theme-toggle" title="Switch theme">◐ Theme</button>
+        <a class="btn btn-sm btn-ghost" href="/api/export" title="Download a JSON backup">↓ Backup</a>
+      </div>
+    </aside>
+    <main class="main" id="view"></main>
+  </div>
+  <div id="modal-root"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

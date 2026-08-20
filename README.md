@@ -48,6 +48,15 @@ Basically, this is "error-driven development"... you'll keep running tests, hitt
   ```
 
 
+### Also in this repo
+
+**[Life OS](life_os/README.md)** — a personal dashboard for work, side hustles and
+everything else, built on the Ruby standard library alone. Run it with:
+
+```language-bash
+ruby life_os/server.rb
+```
+
 ### Credit
 
 This is forked from [https://github.com/alexch/learn_ruby](https://github.com/alexch/learn_ruby), its original creator.
