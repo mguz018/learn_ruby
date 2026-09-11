@@ -16,6 +16,7 @@ Expo (SDK 57) + TypeScript strict + expo-router + Supabase.
 ## Setup
 
 ```sh
+cd spar
 npm install
 cp .env.example .env      # fill in your Supabase URL and anon key
 npm start
@@ -27,6 +28,10 @@ Then enable **Email** sign-in in Auth → Providers.
 
 Only the anon key belongs in `.env`. The Anthropic API key and the transcription
 provider key live in Supabase Edge Function secrets and never touch the client.
+
+The app lives in `spar/` rather than at the repo root: this repository's Netlify
+site publishes the Ruby course pages from the root, and a root `package.json`
+turns on Netlify's Node detection and fails that deploy.
 
 ## Layout
 

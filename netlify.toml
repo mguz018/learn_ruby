@@ -1,11 +1,9 @@
-# This repo's Netlify site publishes the Ruby course pages (the NN_*/index.html
-# files and assets/style.css) straight from the repo root, with no build step.
+# This site publishes the Ruby course pages (the NN_*/index.html files and
+# assets/style.css) straight from the repo root, with no build step.
 #
-# Adding a root package.json for the Spar app turned on Netlify's framework
-# auto-detection, which tried to build it and failed the deploy. Spar has no web
-# version — it is an Expo app, and "no web version" is an explicit v1 non-goal —
-# so this states the site's original behavior explicitly: publish the root, run
-# nothing. An empty command overrides auto-detection.
+# The Spar app lives in spar/ and is deliberately kept out of this build: it is
+# an Expo app with no web version, and a package.json at the build root switches
+# on Netlify's Node detection, which fails the deploy. Keep it in spar/.
 [build]
   publish = "."
   command = ""

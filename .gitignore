@@ -1,12 +1,2 @@
 .idea
 +.DS_Store*
-
-# Expo / node
-node_modules/
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-*.log
-.env
-.env.local
