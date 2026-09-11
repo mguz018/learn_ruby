@@ -1,9 +1,0 @@
-# This site publishes the Ruby course pages (the NN_*/index.html files and
-# assets/style.css) straight from the repo root, with no build step.
-#
-# The Spar app lives in spar/ and is deliberately kept out of this build: it is
-# an Expo app with no web version, and a package.json at the build root switches
-# on Netlify's Node detection, which fails the deploy. Keep it in spar/.
-[build]
-  publish = "."
-  command = ""
