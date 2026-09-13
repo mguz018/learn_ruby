@@ -40,9 +40,11 @@ app/                    routes (expo-router)
   (auth)/sign-in        email OTP
   (onboarding)/         name → sore-spots → off-limits → mode
   (tabs)/               home, progress, settings
+  session                the core loop
 src/api/                Supabase reads and writes
-src/components/         shared UI
-src/lib/                supabase client, theme
+src/components/         shared UI, including the exhale gate
+src/data/               static fallback jab pool
+src/lib/                supabase client, theme, speech, stats
 src/state/              session (auth + profile), onboarding draft
 src/types/db.ts         hand-written schema types
 supabase/migrations/    schema, RLS, storage, delete-my-data RPC
@@ -51,7 +53,7 @@ supabase/migrations/    schema, RLS, storage, delete-my-data RPC
 ## Sessions
 
 - [x] **1** — setup, schema + RLS, auth, onboarding, profile persistence
-- [ ] **2** — Home and the core loop in pause-only mode, static jabs, expo-speech
+- [x] **2** — Home and the core loop in pause-only mode, static jabs, expo-speech
 - [ ] **3** — jab generation edge function with the safety check
 - [ ] **4** — recording, transcription, grading edge function, full mode
 - [ ] **5** — Progress, difficulty ladder, "Too much", session cap, training wheels

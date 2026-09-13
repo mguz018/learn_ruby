@@ -2,6 +2,7 @@
 // `supabase gen types typescript` once the project is linked.
 
 export type SparMode = 'pause_only' | 'full';
+export type SparSessionEnd = 'completed' | 'stopped' | 'too_much';
 export type SparMove =
   | 'agree_bigger'
   | 'own_it'
@@ -28,6 +29,16 @@ export type UserPhrase = {
   created_at: string;
 };
 
+export type SparSession = {
+  id: string;
+  user_id: string;
+  mode: SparMode;
+  difficulty: number;
+  started_at: string;
+  ended_at: string | null;
+  ended_reason: SparSessionEnd | null;
+};
+
 export type Jab = {
   id: string;
   user_id: string;
@@ -40,6 +51,7 @@ export type Jab = {
 export type Rep = {
   id: string;
   user_id: string;
+  session_id: string | null;
   jab_id: string | null;
   mode: SparMode;
   audio_path: string | null;
@@ -73,12 +85,21 @@ export type Database = {
         Partial<Jab>
       >;
       reps: Table<Rep, Omit<Rep, 'id' | 'created_at'>, Partial<Rep>>;
+      sessions: Table<
+        SparSession,
+        { user_id: string; mode: SparMode; difficulty: number },
+        Partial<SparSession>
+      >;
     };
     Views: Record<string, never>;
     Functions: {
       delete_all_my_data: { Args: Record<string, never>; Returns: void };
     };
-    Enums: { spar_mode: SparMode; spar_move: SparMove };
+    Enums: {
+      spar_mode: SparMode;
+      spar_move: SparMove;
+      spar_session_end: SparSessionEnd;
+    };
     CompositeTypes: Record<string, never>;
   };
 };
